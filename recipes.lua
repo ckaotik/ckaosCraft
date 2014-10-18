@@ -155,6 +155,9 @@ local function ScanForReagents(index)
 	end
 end
 
+-- TODO: refactor so we don't nest as deep,
+-- opt1: [craftedItemID] = { 'craftSpellID|minYield|maxYield|reagent1:required1|...' , ... }
+-- opt2: [craftedItemID] = { [craftSpellID] = 'minYield|maxYield|reagent1:required1|...', ... }
 local commonCraftables = {
 	-- [craftedItemID] = { [craftSpellID] = {minYield, maxYield, reagent1, required1[, reagent2, required2[, ...] ] } }
 
@@ -237,6 +240,7 @@ end
 function recipes:OnEnable()
 	hooksecurefunc('TradeSkillFrame_SetSelection', ScanForReagents)
 
+	--[[ -- don't store commons in saved variables!
 	for crafted, crafts in pairs(commonCraftables) do
 		if not self.db.char.craftables[crafted] then
 			self.db.char.craftables[crafted] = {}
@@ -244,7 +248,7 @@ function recipes:OnEnable()
 		for craftSpell, data in pairs(crafts) do
 			self.db.char.craftables[crafted][craftSpell] = data
 		end
-	end
+	end --]]
 
 	if addon.db.profile.autoScanRecipes then
 		-- load spellbook or we'll fail

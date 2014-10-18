@@ -212,8 +212,9 @@ local function UpdateTradeSkillList()
 end
 
 local function UpdateTradeSkillSearch(self, isUserInput)
+	InputBoxInstructions_OnTextChanged(self)
 	local text = self:GetText()
-	self:GetParent().search = (text ~= '' and text ~= _G.SEARCH) and text or nil
+	self:GetParent().search = text ~= '' and text or nil
 	TradeSkillFrame_Update()
 end
 

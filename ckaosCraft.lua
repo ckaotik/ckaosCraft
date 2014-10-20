@@ -242,9 +242,11 @@ local function AddTradeSkillHoverLink(self)
 	if result and recipeLink then
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 
-		if IsEquippableItem(result) and (IsModifiedClick("COMPAREITEMS") or (GetCVarBool("alwaysCompareItems") and not GameTooltip:IsEquippedItem())) then
+		if IsEquippableItem(result) then
 			GameTooltip:SetHyperlink(result)
-			GameTooltip_ShowCompareItem(GameTooltip, 1)
+			if IsModifiedClick("COMPAREITEMS") or (GetCVarBool("alwaysCompareItems") and not GameTooltip:IsEquippedItem()) then
+				GameTooltip_ShowCompareItem(GameTooltip, true)
+			end
 		end
 		GameTooltip:SetHyperlink(recipeLink)
 

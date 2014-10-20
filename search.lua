@@ -12,6 +12,31 @@ local searchResultCache, searchQuery = setmetatable({}, {
 	__mode = 'kv',
 })
 
+local function SearchRow(query, index)
+	if not query then return true end
+	local cache = searchResultCache
+	if cache and cache.query ~= query then
+		wipe(cache)
+		cache.query = query
+	elseif cache[index] ~= nil then
+		return cache[index]
+	end
+
+	local itemLink = GetTradeSkillItemLink(index)
+	if itemLink and ItemSearch:Matches(itemLink, query) then
+		cache[index] = true
+	else -- check reagents
+		for reagentIndex = 1, MAX_TRADE_SKILL_REAGENTS do
+			local reagentLink = GetTradeSkillReagentItemLink(index, reagentIndex)
+			if reagentLink and ItemSearch:Matches(reagentLink, query) then
+				cache[index] = true
+				break
+			end
+		end
+	end
+	return cache[index]
+end
+
 local function UpdateTradeSkillRow(button, index, selected, isGuild)
 	local skillName, skillType, numAvailable, isExpanded, serviceType, numSkillUps, indentLevel, showProgressBar, currentRank, maxRank, startingRank = GetTradeSkillInfo(index)
 
@@ -29,6 +54,7 @@ local function UpdateTradeSkillRow(button, index, selected, isGuild)
 			textWidth = textWidth - _G.SUB_SKILL_BAR_WIDTH
 			rankBar:Show()
 		end
+		skillUps:Hide()
 		button.text:SetWidth(textWidth)
 		button.count:SetText('')
 		button:SetText(skillName)
@@ -104,77 +130,67 @@ local function UpdateTradeSkillRow(button, index, selected, isGuild)
 	search:SendMessage('TRADE_SKILL_ROW_UPDATE', button, index, selected, isGuild)
 end
 
+-- FIXME: why the f do all my collapsed groups vanish!
+local headerParents = {}
 local function UpdateTradeSkillList()
 	if not addon.db.profile.customSearch then return end
 
-	local searchText = _G.TradeSkillFrame.search
-	if not searchText or searchText == _G.SEARCH or not _G.TradeSkillFrameSearchBox:IsEnabled() then return end
-	if searchText ~= searchQuery then wipe(searchResultCache) end
-	searchQuery = searchText
+	local query = _G.TradeSkillFrame.search
+	if not query or query == '' or query == _G.SEARCH or not _G.TradeSkillFrameSearchBox:IsEnabled() then return end
 
-	local offset    = FauxScrollFrame_GetOffset(_G.TradeSkillListScrollFrame)
-	local isGuild   = IsTradeSkillGuild()
-	local selected  = GetTradeSkillSelectionIndex()
-	local numHeaders, notExpanded = 0, 0
+	local offset     = FauxScrollFrame_GetOffset(_G.TradeSkillListScrollFrame)
+	local isGuild    = IsTradeSkillGuild()
+	local selected   = GetTradeSkillSelectionIndex()
+	local isFiltered = _G.TradeSkillFilterBar:IsShown()
 	_G.TradeSkillHighlightFrame:Hide()
 
-	-- ignore the first matches we have scrolled past
-	local buttonIndex = 1 - offset
-	local lastType, sndLastType = nil, nil
-	local numItems = 0
+	local headerState, nextDataRow = nil, 1
+	local buttonIndex, numRows, numDataRows = isFiltered and 2 or 1, 0, 0
 	for index = 1, GetNumTradeSkills() do
-		local isHeader = false
 		local skillName, skillType, numAvailable, isExpanded, serviceType, numSkillUps, indentLevel, showProgressBar, currentRank, maxRank, startingRank = GetTradeSkillInfo(index)
+		local isHeader = (skillType == 'header' and 1) or (skillType == 'subheader' and 2) or nil
 
-		local matchesSearch = false
-		if skillType == 'header' or skillType == 'subheader' then
-			if skillType == lastType or (lastType == 'subheader' and skillType == 'header') then
-				-- FIXME: prevent collapsed headers from hiding, see Twinkle lists
-				-- hide empty groups
-				buttonIndex = buttonIndex - 1
-				numItems    = numItems - 1
-				lastType    = nil
-				if sndLastType == 'header' then
-					-- header - subheader - header, go back 2 steps
+		-- hide nested collapsed rows
+		local isHidden = false
+		for level, isCollapsed in ipairs(headerParents) do
+			if not isHeader or level < isHeader then
+				-- state depends on parent's state
+				isHidden = isHidden or isCollapsed
+			elseif level > isHeader then
+				headerParents[level] = nil
+			end
+		end
+
+		local matchesSearch = isHeader or SearchRow(query, index)
+		if isHeader then
+			if isHeader <= #headerParents and nextDataRow < buttonIndex then
+				-- remove empty sibling/parent headers
+				while buttonIndex > (nextDataRow or 1) and buttonIndex >= (isFiltered and 2 or 1) do
 					buttonIndex = buttonIndex - 1
-					numItems    = numItems - 1
-					sndLastType = nil
+					numRows     = numRows - 1
 				end
 			end
-			isHeader      = true
-			matchesSearch = true
-		elseif skillName then
-			if searchResultCache[index] ~= nil then
-				matchesSearch = searchResultCache[index]
-			else
-				matchesSearch = ItemSearch:Matches(GetTradeSkillItemLink(index), searchText)
-				local reagentIndex = 0
-				while not matchesSearch do
-					reagentIndex = reagentIndex + 1
-					local reagentLink = GetTradeSkillReagentItemLink(index, reagentIndex)
-					if not reagentLink then break end
-					matchesSearch = ItemSearch:Matches(reagentLink, searchText)
-				end
-				searchResultCache[index] = matchesSearch and true or false
+			headerParents[isHeader] = not isExpanded
+			numRows = numRows + 1
+
+			-- compare state for "toggle all" button
+			local state = isExpanded and 'expanded' or 'collapsed'
+			if headerState == nil then
+				headerState = state
+			elseif headerState and headerState ~= state then
+				headerState = false
 			end
+		elseif matchesSearch then
+			-- this row matches, even though it may not be displayed
+			numRows = numRows + 1
+			numDataRows = numDataRows + 1
+			nextDataRow = buttonIndex + (isHidden and 0 or 1)
 		end
 
-		if buttonIndex == 1 and _G.TradeSkillFilterBar:IsShown() then
-			-- first button is filter bar, move on to next one
-			buttonIndex = buttonIndex + 1
-		end
 		local button = _G['TradeSkillSkill'..buttonIndex]
-		if matchesSearch then
-			if button then
-				UpdateTradeSkillRow(button, index, selected, isGuild)
-			end
-			numHeaders  = numHeaders  + (isHeader and 1 or 0)
-			notExpanded = notExpanded + ((isHeader and isExpanded) and 0 or 1)
-
+		if button and index > offset and matchesSearch and not isHidden then
+			UpdateTradeSkillRow(button, index or index, selected, isGuild)
 			buttonIndex = buttonIndex + 1
-			numItems    = numItems + 1
-			sndLastType = lastType
-			lastType    = skillType
 		elseif button then
 			button:Hide()
 			button:UnlockHighlight()
@@ -182,11 +198,7 @@ local function UpdateTradeSkillList()
 		end
 	end
 
-	if lastType == 'header' or lastType == 'subheader' then
-		-- last row is an empty group
-		buttonIndex = buttonIndex - 1
-		numItems    = numItems - 1
-	end
+	buttonIndex = nextDataRow or buttonIndex
 	local button = _G['TradeSkillSkill'..buttonIndex]
 	while button do
 		-- hide unused buttons
@@ -198,11 +210,11 @@ local function UpdateTradeSkillList()
 	end
 
 	-- update scroll bar
-	FauxScrollFrame_Update(_G.TradeSkillListScrollFrame, numItems, _G.TRADE_SKILLS_DISPLAYED, _G.TRADE_SKILL_HEIGHT, nil, nil, nil, nil, nil, nil, true)
+	FauxScrollFrame_Update(_G.TradeSkillListScrollFrame, numRows, _G.TRADE_SKILLS_DISPLAYED, _G.TRADE_SKILL_HEIGHT, nil, nil, nil, nil, nil, nil, true)
 
 	-- Set the expand/collapse all button texture
 	local collapseAll = _G.TradeSkillCollapseAllButton
-	if notExpanded ~= numHeaders then
+	if headerState == 'expanded' then
 		collapseAll.collapsed = nil
 		collapseAll:SetNormalTexture('Interface\\Buttons\\UI-MinusButton-Up')
 	else
@@ -211,6 +223,7 @@ local function UpdateTradeSkillList()
 	end
 end
 
+-- TODO: add slight delay. see Twinkle/Search
 local function UpdateTradeSkillSearch(self, isUserInput)
 	local text = self:GetText()
 	self:GetParent().search = text ~= '' and text ~= _G.SEARCH and text or nil

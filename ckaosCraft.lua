@@ -75,6 +75,14 @@ function addon:OnInitialize()
 			end
 		end,
 	}) --]]
+
+	LibStub('AceConfig-3.0'):RegisterOptionsTable(addonName, {
+		type = 'group',
+		args = {
+			main = LibStub('LibOptionsGenerate-1.0'):GetOptionsTable(addonName..'.db.profile'),
+		},
+	})
+	LibStub('AceConfigDialog-3.0'):AddToBlizOptions(addonName, moduleName, addonName, 'main')
 end
 
 local tradeSkills = {

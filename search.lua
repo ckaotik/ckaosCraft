@@ -54,24 +54,12 @@ local function UpdateTradeSkillRow(button, index, selected, isGuild)
 			textWidth = textWidth - _G.SUB_SKILL_BAR_WIDTH
 			rankBar:Show()
 		end
-		skillUps:Hide()
 		button.text:SetWidth(textWidth)
 		button.count:SetText('')
-		button:SetText(skillName)
 		button:SetNormalTexture('Interface\\Buttons\\' .. (isExpanded and 'UI-MinusButton-Up' or 'UI-PlusButton-Up'))
 		button:GetHighlightTexture():SetTexture('Interface\\Buttons\\UI-PlusButton-Hilight')
-		button:UnlockHighlight()
-		button.isHighlighted = false
+		button:SetText(skillName)
 	else
-		-- multiskill
-		if numSkillUps > 1 and skillType == 'optimal' then
-			usedWidth = _G.TRADE_SKILL_SKILLUP_TEXT_WIDTH
-			skillUps.countText:SetText(numSkillUps)
-			skillUps:Show()
-		else
-			skillUps:Hide()
-		end
-
 		-- guild color override
 		if isGuild then color = _G.TradeSkillTypeColor['easy'] end
 
@@ -92,33 +80,42 @@ local function UpdateTradeSkillRow(button, index, selected, isGuild)
 			textWidth = textWidth - usedWidth
 		end
 		button.text:SetWidth(textWidth)
-
-		-- Place the highlight and lock the highlight state
-		if index == selected then
-			_G.TradeSkillHighlightFrame:SetPoint('TOPLEFT', button, 'TOPLEFT', 0, 0)
-			_G.TradeSkillHighlightFrame:Show()
-			button:LockHighlight()
-			button.isHighlighted = true
-
-			-- update craft details
-			TradeSkillFrame_SetSelection(index)
-			-- Set the max makeable items for the create all button
-			_G.TradeSkillFrame.numAvailable = abs(numAvailable)
-		else
-			button:UnlockHighlight()
-			button.isHighlighted = false
-		end
 	end
 
-	-- color
+	-- update highlight state
+	if index == selected then
+		_G.TradeSkillHighlightFrame:SetPoint('TOPLEFT', button, 'TOPLEFT', 0, 0)
+		_G.TradeSkillHighlightFrame:Show()
+		button:LockHighlight()
+		button.isHighlighted = true
+
+		-- update craft details
+		TradeSkillFrame_SetSelection(index)
+		-- Set the max makeable items for the create all button
+		_G.TradeSkillFrame.numAvailable = abs(numAvailable)
+	else
+		button:UnlockHighlight()
+		button.isHighlighted = false
+	end
+
+	-- button colors
 	button:SetNormalFontObject(color.font)
 	button.font = color.font
 	if button.isHighlighted then color = _G.HIGHLIGHT_FONT_COLOR end
+	button.r, button.g, button.b = color.r, color.g, color.b
 	button.text:SetVertexColor(color.r, color.g, color.b)
 	button.count:SetVertexColor(color.r, color.g, color.b)
+
+	-- multiskill
+	if numSkillUps > 1 and skillType == 'optimal' then
+		usedWidth = _G.TRADE_SKILL_SKILLUP_TEXT_WIDTH
+		skillUps.countText:SetText(numSkillUps)
+		skillUps:Show()
+	else
+		skillUps:Hide()
+	end
 	skillUps.countText:SetVertexColor(color.r, color.g, color.b)
 	skillUps.icon:SetVertexColor(color.r, color.g, color.b)
-	button.r, button.g, button.b = color.r, color.g, color.b
 
 	-- indent
 	button:GetNormalTexture():SetPoint('LEFT', 3 + indentDelta, 0)

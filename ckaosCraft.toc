@@ -18,6 +18,7 @@ libs\LibItemSearch-1.2\LibItemSearch-1.2.lua
 # libs\LibOptionsGenerate-1.0.lua
 
 ckaosCraft.lua
+reagents.lua
 recipeBook.lua
 recipes.lua
 search.lua

@@ -229,15 +229,13 @@ end
 -- /cast <profession name>
 -- /run for i=1,GetNumTradeSkills() do if GetTradeSkillInfo(i)==<crafted item> then DoTradeSkill(i, <num>); CloseTradeSkill(); break end end
 
-function recipes:OnInitialize()
+function recipes:OnEnable()
 	self.db = addon.db:RegisterNamespace('Recipes', {
 		char = {
 			craftables = {},
 		},
 	})
-end
 
-function recipes:OnEnable()
 	hooksecurefunc('TradeSkillFrame_SetSelection', ScanForReagents)
 
 	--[[ -- don't store commons in saved variables!

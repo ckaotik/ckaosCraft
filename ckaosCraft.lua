@@ -82,7 +82,7 @@ function addon:OnInitialize()
 			main = LibStub('LibOptionsGenerate-1.0'):GetOptionsTable(addonName..'.db.profile'),
 		},
 	})
-	LibStub('AceConfigDialog-3.0'):AddToBlizOptions(addonName, moduleName, addonName, 'main')
+	LibStub('AceConfigDialog-3.0'):AddToBlizOptions(addonName, addonName, nil, 'main')
 end
 
 local tradeSkills = {

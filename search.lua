@@ -15,26 +15,28 @@ local searchResultCache, searchQuery = setmetatable({}, {
 local function SearchRow(query, index)
 	if not query then return true end
 	local cache = searchResultCache
+	local key   = GetTradeSkillRecipeLink(index)
+	local itemLink = GetTradeSkillItemLink(index)
+
 	if cache and cache.query ~= query then
 		wipe(cache)
 		cache.query = query
-	elseif cache[index] ~= nil then
-		return cache[index]
+	elseif cache[key] ~= nil then
+		return cache[key]
 	end
 
-	local itemLink = GetTradeSkillItemLink(index)
 	if itemLink and ItemSearch:Matches(itemLink, query) then
-		cache[index] = true
+		cache[key] = true
 	else -- check reagents
 		for reagentIndex = 1, MAX_TRADE_SKILL_REAGENTS do
 			local reagentLink = GetTradeSkillReagentItemLink(index, reagentIndex)
 			if reagentLink and ItemSearch:Matches(reagentLink, query) then
-				cache[index] = true
+				cache[key] = true
 				break
 			end
 		end
 	end
-	return cache[index]
+	return cache[key]
 end
 
 local function UpdateTradeSkillRow(button, index, selected, isGuild)
@@ -127,9 +129,9 @@ local function UpdateTradeSkillRow(button, index, selected, isGuild)
 	search:SendMessage('TRADE_SKILL_ROW_UPDATE', button, index, selected, isGuild)
 end
 
--- FIXME: why the f do all my collapsed groups vanish!
 local headerParents = {}
 local function UpdateTradeSkillList()
+	-- TODO: when selection does not fulfill search, select first child
 	if not addon.db.profile.customSearch then return end
 
 	local query = _G.TradeSkillFrame.search
@@ -141,8 +143,8 @@ local function UpdateTradeSkillList()
 	local isFiltered = _G.TradeSkillFilterBar:IsShown()
 	_G.TradeSkillHighlightFrame:Hide()
 
-	local headerState, nextDataRow = nil, 1
 	local buttonIndex, numRows, numDataRows = isFiltered and 2 or 1, 0, 0
+	local headerState, nextDataRow = nil, buttonIndex
 	for index = 1, GetNumTradeSkills() do
 		local skillName, skillType, numAvailable, isExpanded, serviceType, numSkillUps, indentLevel, showProgressBar, currentRank, maxRank, startingRank = GetTradeSkillInfo(index)
 		local isHeader = (skillType == 'header' and 1) or (skillType == 'subheader' and 2) or nil
@@ -154,20 +156,34 @@ local function UpdateTradeSkillList()
 				-- state depends on parent's state
 				isHidden = isHidden or isCollapsed
 			elseif level > isHeader then
+				-- remove deeper levels
 				headerParents[level] = nil
 			end
 		end
 
-		local matchesSearch = isHeader or SearchRow(query, index)
+		local matchesSearch = (isHeader and true) or SearchRow(query, index)
 		if isHeader then
-			if isHeader <= #headerParents and nextDataRow < buttonIndex then
+			-- print(isHeader, skillName, #headerParents, '/', buttonIndex, nextDataRow, '/', numRows, numDataRows)
+			--[[
+				1 Alte alch. R. 1 /  1  1 /  0 0
+				2 Forschung 	1 /  2  1 /  1 0 <--
+				2 Transmutation 2 /  3  1 /  2 0
+				2 Fläschchen 	2 /  6  6 /  5 2
+				2 Tränke 		2 /  8  8 /  7 3
+				2 Elixiere 		2 / 10 10 /  9 4
+				2 Kessel 		2 / 14 14 / 13 7
+				2 Öle 			2 / 17 17 / 16 9 <--
+				2 Schmuck 		2 / 18 17 / 17 9 <--
+			--]]
+
+			--[[ if isHeader <= #headerParents then
 				-- remove empty sibling/parent headers
-				while buttonIndex > (nextDataRow or 1) and buttonIndex >= (isFiltered and 2 or 1) do
+				while nextDataRow < buttonIndex do
 					buttonIndex = buttonIndex - 1
 					numRows     = numRows - 1
 				end
-			end
-			headerParents[isHeader] = not isExpanded
+			end --]]
+			headerParents[isHeader] = not isExpanded and true or false
 			numRows = numRows + 1
 
 			-- compare state for "toggle all" button
@@ -186,16 +202,12 @@ local function UpdateTradeSkillList()
 
 		local button = _G['TradeSkillSkill'..buttonIndex]
 		if button and index > offset and matchesSearch and not isHidden then
-			UpdateTradeSkillRow(button, index or index, selected, isGuild)
+			UpdateTradeSkillRow(button, index, selected, isGuild)
 			buttonIndex = buttonIndex + 1
-		elseif button then
-			button:Hide()
-			button:UnlockHighlight()
-			button.isHighlighted = false
 		end
 	end
 
-	buttonIndex = nextDataRow or buttonIndex
+	-- buttonIndex = nextDataRow or buttonIndex -- this causes the last collapsed group to vanish
 	local button = _G['TradeSkillSkill'..buttonIndex]
 	while button do
 		-- hide unused buttons
@@ -227,10 +239,9 @@ local function UpdateTradeSkillSearch(self, isUserInput)
 	TradeSkillFrame_Update()
 end
 
-function search:OnInitialize()
-end
-
 local function InitializeTradeSkillFrame(event, ...)
+	search:UnregisterEvent('TRADE_SKILL_SHOW')
+
 	local color = _G.NORMAL_FONT_COLOR_CODE
 	local searchBox = _G.TradeSkillFrameSearchBox
 	      searchBox._OnTextChanged = searchBox:GetScript('OnTextChanged')
@@ -256,8 +267,6 @@ local function InitializeTradeSkillFrame(event, ...)
 	searchBox['tiptext'..(index+1)], searchBox['tiptext'..(index+1)..'Right'] = 'l: > 200 & boe', 'BoE items with level > 200'
 	searchBox['tiptext'..(index+2)], searchBox['tiptext'..(index+2)..'Right'] = 'q: epic & gladiator', 'Epics named gladiator'
 	searchBox['tiptext'..(index+3)] = 'Combine using ' ..color..'!|r (don\'t match), '..color..'&|r (and), '..color..'|||r (or)'
-
-	search:UnregisterEvent('TRADE_SKILL_SHOW')
 end
 
 function search:OnEnable()

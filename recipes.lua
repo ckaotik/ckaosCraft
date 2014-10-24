@@ -9,6 +9,9 @@ local recipes = addon:NewModule('Recipes')
 -- GLOBALS: wipe, select, pairs, hooksecurefunc, tonumber
 local tinsert = table.insert
 
+-- --------------------------------------------------------
+--  Recipe Scanning
+-- --------------------------------------------------------
 local tradeSkillFilters = {}
 local function SaveFilters()
 	local displayedTradeskill = _G.CURRENT_TRADESKILL
@@ -134,30 +137,9 @@ local function ScanTradeSkills()
 	end
 end
 
-local function ScanForReagents(index)
-	if not addon.db.profile.scanRecipes then return end
-	for i = 1, GetTradeSkillNumReagents(index) do
-		local _, _, reagentCount, playerReagentCount = GetTradeSkillReagentInfo(index, i)
-		local link = GetTradeSkillReagentItemLink(index, i)
-
-		local linkType, id = link and link:match("\124H([^:]+):([^:]+)")
-					    id = id and tonumber(id, 10)
-		if id and recipes.db.char.craftables[id] and playerReagentCount < reagentCount then
-			for spellID, data in pairs(recipes.db.char.craftables[id]) do
-				local spellLink, tradeLink = GetSpellLink(spellID)
-				if recipes.IsTradeSkillKnown(spellID) then
-					-- print('could create', link, spellLink, tradeLink)
-				else
-					-- print(link, 'is craftable via', spellLink, tradeLink, "but you don't know/don't have materials")
-				end
-			end
-		end
-	end
-end
-
--- TODO: refactor so we don't nest as deep,
--- opt1: [craftedItemID] = { 'craftSpellID|minYield|maxYield|reagent1:required1|...' , ... }
--- opt2: [craftedItemID] = { [craftSpellID] = 'minYield|maxYield|reagent1:required1|...', ... }
+-- --------------------------------------------------------
+--  Reagent Display
+-- --------------------------------------------------------
 local commonCraftables = {
 	-- [craftedItemID] = { [craftSpellID] = {minYield, maxYield, reagent1, required1[, reagent2, required2[, ...] ] } }
 
@@ -216,19 +198,74 @@ local commonCraftables = {
 	[76734] = { [131776] = {1, 1, 90407, 10} }, -- Serpent's Eye
 }
 
+local function ScanForReagents(index, ...)
+	for i = 1, GetTradeSkillNumReagents(index) do
+		local _, _, reagentCount, playerReagentCount = GetTradeSkillReagentInfo(index, i)
+		local link = GetTradeSkillReagentItemLink(index, i)
+		if link then
+			local linkType, id = link:match("\124H([^:]+):([^:]+)")
+						    id = id and tonumber(id)
+			-- we know this reagent can be crafted and we need some more of it
+			if playerReagentCount < reagentCount and id and recipes.db.char.craftables[id] then
+				for spellID, data in pairs(recipes.db.char.craftables[id]) do
+					local spellLink, tradeLink = GetSpellLink(spellID)
+					if recipes.IsTradeSkillKnown(spellID) then
+						print('could create', link, spellLink, tradeLink)
+					else
+						print(link, 'is craftable via', spellLink, tradeLink, "but you don't know/don't have materials")
+					end
+				end
+			end
+		end
+	end
+end
+
+local function GetMacroText(craftSpellID, numCrafts, profession)
+	local macro = ''
+	if profession and _G.CURRENT_TRADESKILL ~= profession then
+		macro = macro .. '/cast '..profession..'\n'
+	end
+	macro = macro .. '/run for i=1,GetNumTradeSkills() do if GetTradeSkillRecipeLink(i):match("enchant:'..craftSpellID..'\124") then DoTradeSkill(i,'..(numCrafts or 1)..') break end end'
+	-- macro = macro .. '/run for i=1,GetNumTradeSkills() do if GetTradeSkillInfo(i)==<crafted item> then DoTradeSkill(i, <num>); CloseTradeSkill(); break end end'
+	return macro
+end
+
 -- http://www.wowpedia.org/TradeSkillLink string.byte, bit
 function recipes.IsTradeSkillKnown(craftSpellID)
 	-- local professionLink = GetTradeSkillListLink()
 	-- if not professionLink then return end
 	-- local unitGUID, tradeSpellID, currentRank, maxRank, recipeList = professionLink:match("\124Htrade:([^:]+):([^:]+):([^:]+):([^:]+):([^:\124]+)")
 
+	-- take a shortcut when possible
+	if IsUsableSpell(craftSpellID) then
+		-- craft is known and reagents are available
+		return true
+	end
+
+	-- is this a common spell such as combine motes or split essences
+	for craftedItemID, sources in pairs(commonCraftables) do
+		for craftSpell, data in pairs(sources) do
+			if craftSpell == craftSpellID then
+				return true
+			end
+		end
+	end
+
+	-- scan our saved profession info
+	for craftedItemID, sources in pairs(recipes.db.char.craftables) do
+		for craftSpell, data in pairs(sources) do
+			if craftSpell == craftSpellID then
+				return true
+			end
+		end
+	end
+
 	return IsUsableSpell(craftSpellID)
 end
 
--- IsUsableSpell(craftSpellID) as far as reagents are available
--- /cast <profession name>
--- /run for i=1,GetNumTradeSkills() do if GetTradeSkillInfo(i)==<crafted item> then DoTradeSkill(i, <num>); CloseTradeSkill(); break end end
-
+-- --------------------------------------------------------
+--  Module Setup
+-- --------------------------------------------------------
 function recipes:OnEnable()
 	self.db = addon.db:RegisterNamespace('Recipes', {
 		char = {
@@ -236,18 +273,7 @@ function recipes:OnEnable()
 		},
 	})
 
-	hooksecurefunc('TradeSkillFrame_SetSelection', ScanForReagents)
-
-	--[[ -- don't store commons in saved variables!
-	for crafted, crafts in pairs(commonCraftables) do
-		if not self.db.char.craftables[crafted] then
-			self.db.char.craftables[crafted] = {}
-		end
-		for craftSpell, data in pairs(crafts) do
-			self.db.char.craftables[crafted][craftSpell] = data
-		end
-	end --]]
-
+	-- scanning part
 	if addon.db.profile.autoScanRecipes then
 		-- load spellbook or we'll fail
 		ToggleSpellBook(_G.BOOKTYPE_PROFESSION)
@@ -261,9 +287,14 @@ function recipes:OnEnable()
 			ScanTradeSkills()
 			UnregisterStateDriver(fullscreenTrigger, 'visibility')
 			fullscreenTrigger:Hide()
+
+			hooksecurefunc('TradeSkillFrame_Show', ScanTradeSkill)
 		end)
 		RegisterStateDriver(fullscreenTrigger, 'visibility', '[combat] hide; show')
 	else
 		hooksecurefunc('TradeSkillFrame_Show', ScanTradeSkill)
 	end
+
+	-- display part
+	hooksecurefunc('TradeSkillFrame_SetSelection', ScanForReagents)
 end

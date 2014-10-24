@@ -42,6 +42,8 @@ local function OnTradeSkillFrame_SetSelection(index)
 	reqLabel:SetPoint('TOPLEFT', cooldown, 'BOTTOMLEFT', 0, -10)
 	reqText:SetPoint('TOPLEFT', reqLabel, 'BOTTOMLEFT', 0, 0)
 	reagentLabel:SetPoint('TOPLEFT', reqText, 'BOTTOMLEFT', 0, -10)
+
+	-- TODO: display reagent tooltip only when hovering item (via :SetHitRectInsets(left, right, top, bottom))
 end
 
 --[[ Size references:

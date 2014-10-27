@@ -162,6 +162,17 @@ local function AddTradeSkillInfoIcon(line)
 	return button
 end
 
+local function TradeSkillLineCostTooltip(button, tooltip)
+	local craftPrice, craftedValue = button.price, button.value
+	tooltip:AddLine(_G.AUCTION_TOOLTIP_BID_PREFIX)
+	tooltip:AddDoubleLine(_G.COSTS_LABEL, GetCoinTextureString(craftPrice))
+	tooltip:AddDoubleLine(_G.SELL_PRICE..':', GetCoinTextureString(craftedValue))
+
+	local difference = craftedValue - craftPrice
+	if difference > 0 then
+		tooltip:AddDoubleLine(_G.LOOT_ROLL_YOU_WON:gsub(' %%s', ''), GetCoinTextureString(difference))
+	end
+end
 local function AddTradeSkillLineReagentCost(message, button, skillIndex, selected, isGuild)
 	if not addon.db.profile.profitIndicator then return end
 
@@ -193,11 +204,12 @@ local function AddTradeSkillLineReagentCost(message, button, skillIndex, selecte
 
 		if craftPrice > 0 and craftedValue > 0 then
 			local infoIcon = button.infoIcon or AddTradeSkillInfoIcon(button)
-			      infoIcon.tiptext = string.format('%s %s\n%s: %s', _G.COSTS_LABEL, GetCoinTextureString(craftPrice), _G.SELL_PRICE, GetCoinTextureString(craftedValue))
+			      infoIcon.tiptext = TradeSkillLineCostTooltip
+			      infoIcon.price = craftPrice
+			      infoIcon.value = craftedValue
 
 			local difference = craftedValue - craftPrice
 			if difference > 0 then
-				infoIcon.tiptext = infoIcon.tiptext .. "\n"..string.format(_G.LOOT_ROLL_YOU_WON, GetCoinTextureString(difference))
 				if craftPrice > 0 and difference / craftPrice > 0.2 and difference > 500000 then
 					infoIcon:SetNormalTexture('Interface\\COMMON\\Indicator-Green')
 				else

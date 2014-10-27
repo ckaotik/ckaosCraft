@@ -5,7 +5,7 @@ local recipes = addon:NewModule('Recipes')
 -- GLOBALS: _G, LibStub
 -- GLOBALS: CreateFrame, SpellButton_OnClick, TradeSkillOnlyShowMakeable, TradeSkillOnlyShowSkillUps, TradeSkillUpdateFilterBar, SelectTradeSkill, RegisterStateDriver, UnregisterStateDriver, CloseTradeSkill
 -- GLOBALS: GetTradeSkillSelectionIndex, GetTradeSkillItemNameFilter, GetTradeSkillItemLevelFilter, GetTradeSkillInvSlotFilter, GetTradeSkillInvSlots, GetTradeSkillCategoryFilter, GetTradeSkillSubClasses, SetTradeSkillItemNameFilter, SetTradeSkillItemLevelFilter, SetTradeSkillInvSlotFilter, SetTradeSkillCategoryFilter, TradeSkillSetFilter, ExpandTradeSkillSubClass
--- GLOBALS: ToggleSpellBook, IsUsableSpell, GetSpellLink, IsTradeSkillLinked, GetTradeSkillNumReagents, GetTradeSkillReagentInfo, GetTradeSkillReagentItemLink, GetNumTradeSkills, GetTradeSkillInfo, GetTradeSkillNumMade, GetTradeSkillItemLink, GetTradeSkillRecipeLink
+-- GLOBALS: ToggleSpellBook, IsUsableSpell, GetSpellLink, IsTradeSkillLinked, GetTradeSkillNumReagents, GetTradeSkillReagentInfo, GetTradeSkillReagentItemLink, GetNumTradeSkills, GetTradeSkillInfo, GetTradeSkillNumMade, GetTradeSkillItemLink, GetTradeSkillRecipeLink, GetTradeSkillListLink
 -- GLOBALS: wipe, select, pairs, hooksecurefunc, tonumber
 local tinsert = table.insert
 
@@ -83,6 +83,15 @@ local function ScanTradeSkill()
 	-- TODO: maybe even allow reagent crafting for linked skills, assuming we have the skill, too
 	if IsTradeSkillLinked() then return end
 
+	local professionLink = GetTradeSkillListLink()
+	local unitGUID, _, professionSkill = professionLink:match('trade:([^:]+):([^:]+):([^:\124]+)')
+	                   professionSkill = tonumber(professionSkill)
+	if not recipes.db.char.craftables[professionSkill] then
+		recipes.db.char.craftables[professionSkill] = {}
+	end
+	local craftables = recipes.db.char.craftables[professionSkill]
+	wipe(craftables)
+
 	SaveFilters()
 	RemoveActiveFilters()
 	for index = 1, GetNumTradeSkills() do
@@ -95,15 +104,14 @@ local function ScanTradeSkill()
 			local craftSpellID = GetTradeSkillRecipeLink(index)
 				  craftSpellID = 1*craftSpellID:match('enchant:(%d+)')
 
-			if not recipes.db.char.craftables[craftedID] then recipes.db.char.craftables[craftedID] = {} end
-			local craftedTable = recipes.db.char.craftables[craftedID]
-			if not craftedTable[craftSpellID] then
-				craftedTable[craftSpellID] = {}
+			if not craftables[craftedID] then craftables[craftedID] = {} end
+			if not craftables[craftedID][craftSpellID] then
+				craftables[craftedID][craftSpellID] = {}
 			else
-				wipe(craftedTable[craftSpellID])
+				wipe(craftables[craftedID][craftSpellID])
 			end
-			local dataTable = craftedTable[craftSpellID]
 
+			local dataTable = craftables[craftedID][craftSpellID]
 			dataTable[1], dataTable[2] = minYield, maxYield
 			for i = 1, GetTradeSkillNumReagents(index) do
 				local _, _, reagentCount = GetTradeSkillReagentInfo(index, i)
@@ -114,7 +122,6 @@ local function ScanTradeSkill()
 					tinsert(dataTable, reagentCount)
 				end
 			end
-			-- print('new entry', skillName, unpack(MidgetDB.craftables[craftedID][craftSpellID]))
 		end
 	end
 	RestoreFilters()
@@ -140,6 +147,7 @@ end
 -- --------------------------------------------------------
 --  Reagent Display
 -- --------------------------------------------------------
+local emptyTable = {}
 local commonCraftables = {
 	-- [craftedItemID] = { [craftSpellID] = {minYield, maxYield, reagent1, required1[, reagent2, required2[, ...] ] } }
 
@@ -203,16 +211,18 @@ local function ScanForReagents(index, ...)
 		local _, _, reagentCount, playerReagentCount = GetTradeSkillReagentInfo(index, i)
 		local link = GetTradeSkillReagentItemLink(index, i)
 		if link then
-			local linkType, id = link:match("\124H([^:]+):([^:]+)")
+			local linkType, id = link:match('\124H([^:]+):([^:]+)')
 						    id = id and tonumber(id)
 			-- we know this reagent can be crafted and we need some more of it
-			if playerReagentCount < reagentCount and id and recipes.db.char.craftables[id] then
-				for spellID, data in pairs(recipes.db.char.craftables[id]) do
-					local spellLink, tradeLink = GetSpellLink(spellID)
-					if recipes.IsTradeSkillKnown(spellID) then
-						print('could create', link, spellLink, tradeLink)
-					else
-						print(link, 'is craftable via', spellLink, tradeLink, "but you don't know/don't have materials")
+			if playerReagentCount < reagentCount and id then
+				for professionSkill, craftables in pairs(recipes.db.char.craftables) do
+					for spellID, data in pairs(craftables[id] or emptyTable) do
+						local spellLink = GetSpellLink(spellID)
+						if recipes.IsTradeSkillKnown(spellID) then
+							print('could create', link, spellLink)
+						else
+							print(link, 'is craftable via', spellLink, 'but you don\'t know/don\'t have materials')
+						end
 					end
 				end
 			end
@@ -252,10 +262,12 @@ function recipes.IsTradeSkillKnown(craftSpellID)
 	end
 
 	-- scan our saved profession info
-	for craftedItemID, sources in pairs(recipes.db.char.craftables) do
-		for craftSpell, data in pairs(sources) do
-			if craftSpell == craftSpellID then
-				return true
+	for professionSkill, craftables in pairs(recipes.db.char.craftables) do
+		for craftedItemID, sources in pairs(craftables) do
+			for craftSpell, data in pairs(sources) do
+				if craftSpell == craftSpellID then
+					return true
+				end
 			end
 		end
 	end

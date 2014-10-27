@@ -81,7 +81,7 @@ end
 
 local function ScanTradeSkill()
 	-- TODO: maybe even allow reagent crafting for linked skills, assuming we have the skill, too
-	if IsTradeSkillLinked() then return end
+	if IsTradeSkillLinked() or not IsTradeSkillReady() then return end
 
 	local professionLink = GetTradeSkillListLink()
 	local unitGUID, _, professionSkill = professionLink:match('trade:([^:]+):([^:]+):([^:\124]+)')
@@ -237,6 +237,8 @@ local function GetMacroText(craftSpellID, numCrafts, profession)
 	end
 	macro = macro .. '/run for i=1,GetNumTradeSkills() do if GetTradeSkillRecipeLink(i):match("enchant:'..craftSpellID..'\124") then DoTradeSkill(i,'..(numCrafts or 1)..') break end end'
 	-- macro = macro .. '/run for i=1,GetNumTradeSkills() do if GetTradeSkillInfo(i)==<crafted item> then DoTradeSkill(i, <num>); CloseTradeSkill(); break end end'
+	-- macro = macro .. '/cast '.._G.CURRENT_TRADESKILL..'\n'
+	-- macro = macro .. '/run TradeSkillFrame_SetSelection('..GetTradeSkillSelectionIndex()..')'
 	return macro
 end
 

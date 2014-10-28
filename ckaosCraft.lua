@@ -86,22 +86,25 @@ function addon:OnInitialize()
 end
 
 local tradeSkills = {
-	[2259] 	= "Alchemy",
-	[2018] 	= "Blacksmithing",
-	[7411] 	= "Enchanting",
-	[4036] 	= "Engineering",
-	[13614] = "Herbalism",		-- actually 2366 but this has the correct skill name
-	[45357] = "Inscription",
-	[25229] = "Jewelcrafting",
-	[2108] 	= "Leatherworking",
-	[2575] 	= "Mining",
-	[8613] 	= "Skinning",
-	[3908] 	= "Tailoring",
-
-	[78670]	= "Archaeology",
-	[2550] 	= "Cooking",
-	[3273] 	= "First Aid",
-	[7620] 	= "Fishing",
+	-- primary crafting
+	[ 2259] = 'Alchemy',
+	[ 2018] = 'Blacksmithing',
+	[ 7411] = 'Enchanting',
+	[ 4036] = 'Engineering',
+	[45357] = 'Inscription',
+	[25229] = 'Jewelcrafting',
+	[ 2108] = 'Leatherworking',
+	[ 3908] = 'Tailoring',
+	-- primary gathering
+	[13614] = 'Herbalism', -- this has the correct skill name
+	[ 2366] = 'Herbalism', -- ... and this is from the spell book
+	[ 2575] = 'Mining',
+	[ 8613] = 'Skinning',
+	-- secondary
+	[78670]	= 'Archaeology',
+	[ 2550] = 'Cooking',
+	[ 3273] = 'First Aid',
+	[ 7620] = 'Fishing',
 }
 local skillColors = {
 	[1] = "|cffFF8040",		-- orange
@@ -109,9 +112,10 @@ local skillColors = {
 	[3] = "|cff40BF40",		-- green
 	[4] = "|cff808080", 	-- gray
 }
-local function GetTradeSkill(skill)
+local function GetEnglishTradeSkillName(skill)
 	if not skill then return end
 	if type(skill) == "number" then
+		-- FIXME: this is wishful thinking
 		skill = GetProfessionInfo(skill)
 	end
 	for spellID, skillName in pairs(tradeSkills) do
@@ -131,7 +135,7 @@ local function AddTradeSkillLevels(id)
 	if not addon.db.profile.skillUpLevels then return end
 
 	local tradeskill = _G.CURRENT_TRADESKILL
-		  tradeskill = GetTradeSkill(tradeskill)
+		  tradeskill = GetEnglishTradeSkillName(tradeskill)
 	local recipe = GetTradeSkillItemLink(id)
 		  recipe = tonumber(select(3, string.find(recipe or "", "-*:(%d+)[:|].*")) or "")
 	if not recipe then return end

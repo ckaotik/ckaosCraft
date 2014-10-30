@@ -234,22 +234,17 @@ end
 
 -- TODO: add slight delay. see Twinkle/Search
 local function UpdateTradeSkillSearch(self, isUserInput)
+	InputBoxInstructions_OnTextChanged(self)
 	local text = self:GetText()
-	self:GetParent().search = text ~= '' and text ~= _G.SEARCH and text or nil
+	self:GetParent().search = text ~= '' and text or nil
 	TradeSkillFrame_Update()
 end
 
-local function InitializeTradeSkillFrame(event, ...)
-	search:UnregisterEvent('TRADE_SKILL_SHOW')
-
+local function ShowSearchTooltip(button, tooltip)
 	local color = _G.NORMAL_FONT_COLOR_CODE
-	local searchBox = _G.TradeSkillFrameSearchBox
-	      searchBox._OnTextChanged = searchBox:GetScript('OnTextChanged')
-	      searchBox:SetScript('OnTextChanged', UpdateTradeSkillSearch)
-	      searchBox._tiptext = searchBox.tiptext
-	      searchBox.tiptext  = 'Search hints:'
+	local r, g, b = _G.NORMAL_FONT_COLOR.r, _G.NORMAL_FONT_COLOR.g, _G.NORMAL_FONT_COLOR.b
 
-	local index = 2
+	tooltip:AddLine('Search hints:')
 	for key, label in pairs({
 		['Name']     = 'n',
 		['Type']     = 't, slot',
@@ -259,14 +254,31 @@ local function InitializeTradeSkillFrame(event, ...)
 		['Equipment sets'] = 's (* to match any)',
 		['Tooltip']  = 'tt, tip',
 	}) do
-		searchBox['tiptext'..index] = color..key..'|r'
-		searchBox['tiptext'..index..'Right'] = label
-		index = index + 1
+		tooltip:AddDoubleLine(key, label, r, g, b, 1, 1, 1)
 	end
-	searchBox['tiptext'..index] = color..'|nExamples:|r'
-	searchBox['tiptext'..(index+1)], searchBox['tiptext'..(index+1)..'Right'] = 'l: > 200 & boe', 'BoE items with level > 200'
-	searchBox['tiptext'..(index+2)], searchBox['tiptext'..(index+2)..'Right'] = 'q: epic & gladiator', 'Epics named gladiator'
-	searchBox['tiptext'..(index+3)] = 'Combine using ' ..color..'!|r (don\'t match), '..color..'&|r (and), '..color..'|||r (or)'
+	tooltip:AddLine(' ')
+	tooltip:AddLine('Examples:', r, g, b)
+	tooltip:AddDoubleLine('l: > 200 & boe', 'BoE items with level > 200')
+	tooltip:AddDoubleLine('q: epic & gladiator', 'Epics named gladiator')
+	tooltip:AddLine('Combine using ' ..color..'!|r (don\'t match), '..color..'&|r (and), '..color..'|||r (or)')
+end
+
+local function InitializeTradeSkillFrame(event, ...)
+	search:UnregisterEvent('TRADE_SKILL_SHOW')
+
+	local orig_searchBox = _G.TradeSkillFrameSearchBox
+	      orig_searchBox:Hide()
+	local searchBox = CreateFrame('EditBox', '$parentAdvancesSearchBox', _G.TradeSkillFrame, 'SearchBoxTemplate')
+	      searchBox:SetAllPoints(orig_searchBox)
+	      searchBox.tiptext = ShowSearchTooltip
+	_G.TradeSkillFrame.searchBox = searchBox
+
+	searchBox:SetScript('OnEnter', addon.ShowTooltip)
+	searchBox:SetScript('OnLeave', addon.HideTooltip)
+	searchBox:SetScript('OnTextChanged', UpdateTradeSkillSearch)
+	searchBox:SetScript('OnEnterPressed', EditBox_ClearFocus)
+	searchBox:SetScript('OnEscapePressed', function(self) self.clearButton:Click() end)
+	searchBox.clearFunc = function(self) TradeSkillFrame_Update() end
 end
 
 function search:OnEnable()
@@ -277,10 +289,7 @@ end
 
 function search:OnDisable()
 	self:UnregisterEvent('TRADE_SKILL_SHOW')
-
-	local searchBox = _G.TradeSkillFrameSearchBox
-	      searchBox:SetScript('OnTextChanged', searchBox._OnTextChanged)
-	      searchBox._OnTextChanged = nil
-	      searchBox.tiptext = searchBox._tiptext
-	      searchBox._tiptext = searchBox.tiptext
+	-- show original search box again
+	_G.TradeSkillFrame.searchBox:Hide()
+	_G.TradeSkillFrameSearchBox:Show()
 end

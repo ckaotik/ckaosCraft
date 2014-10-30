@@ -163,19 +163,7 @@ local function UpdateTradeSkillList()
 
 		local matchesSearch = (isHeader and true) or SearchRow(query, index)
 		if isHeader then
-			-- print(isHeader, skillName, #headerParents, '/', buttonIndex, nextDataRow, '/', numRows, numDataRows)
-			--[[
-				1 Alte alch. R. 1 /  1  1 /  0 0
-				2 Forschung 	1 /  2  1 /  1 0 <--
-				2 Transmutation 2 /  3  1 /  2 0
-				2 Fläschchen 	2 /  6  6 /  5 2
-				2 Tränke 		2 /  8  8 /  7 3
-				2 Elixiere 		2 / 10 10 /  9 4
-				2 Kessel 		2 / 14 14 / 13 7
-				2 Öle 			2 / 17 17 / 16 9 <--
-				2 Schmuck 		2 / 18 17 / 17 9 <--
-			--]]
-
+			-- Note: This is commented out because we cannot know what contents collapsed categories have
 			--[[ if isHeader <= #headerParents then
 				-- remove empty sibling/parent headers
 				while nextDataRow < buttonIndex do
@@ -283,7 +271,6 @@ end
 
 function search:OnEnable()
 	self:RegisterEvent('TRADE_SKILL_SHOW', InitializeTradeSkillFrame)
-
 	hooksecurefunc('TradeSkillFrame_Update', UpdateTradeSkillList)
 end
 

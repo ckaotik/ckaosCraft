@@ -49,6 +49,7 @@ local function ReadData(craftedItemID, craftSpellID, professionID)
 end
 
 local function WriteData(craftedItemID, craftSpellID, professionID, min, max, ...)
+	if not ... then return end
 	if not recipes.db.char.craftables[craftedItemID] then
 		recipes.db.char.craftables[craftedItemID] = {}
 	end

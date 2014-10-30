@@ -3,7 +3,7 @@ local addonName, addon, _ = ...
 local search = addon:NewModule('ProfessionTabs')
 
 -- GLOBALS: _G, LibStub
-
+-- Important: Don't close when clicking already displayed tradeskill
 
 --[[
 local function SetTradeSkillTab(index, spellID, isSecondary)

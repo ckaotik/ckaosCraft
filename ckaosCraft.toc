@@ -22,3 +22,4 @@ recipeBook.lua
 recipes.lua
 search.lua
 tabs.lua
+config.lua

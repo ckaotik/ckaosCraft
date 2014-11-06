@@ -69,20 +69,12 @@ function addon:OnInitialize()
 		OnClick = function(button, btn, up)
 			if btn == 'RightButton' then
 				-- open config
-				-- InterfaceOptionsFrame_OpenToCategory(self.options)
+				-- InterfaceOptionsFrame_OpenToCategory(addonName)
 			else
 				ToggleFrame(self.frame)
 			end
 		end,
 	}) --]]
-
-	LibStub('AceConfig-3.0'):RegisterOptionsTable(addonName, {
-		type = 'group',
-		args = {
-			main = LibStub('LibOptionsGenerate-1.0'):GetOptionsTable(addonName..'.db.profile'),
-		},
-	})
-	LibStub('AceConfigDialog-3.0'):AddToBlizOptions(addonName, addonName, nil, 'main')
 end
 
 local tradeSkills = {

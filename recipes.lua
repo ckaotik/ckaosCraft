@@ -298,9 +298,9 @@ local function ScanForReagents(index, ...)
 					-- local spellLink = spellID < 0 and ('enchant:'..(-1*spellID)) or ('spell:'..spellID)
 					--       spellLink = GetFixedLink(spellLink)
 					if recipes.IsTradeSkillKnown(spellID) then
-						print('could create', link, spellLink)
+						-- print('could create', link, spellLink)
 					else
-						print(link, 'is craftable via', spellLink, 'but you don\'t know/don\'t have materials')
+						-- print(link, 'is craftable via', spellLink, 'but you don\'t know/don\'t have materials')
 					end
 				end
 			end

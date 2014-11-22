@@ -168,6 +168,7 @@ local function ScanTradeSkill()
 	if IsTradeSkillLinked() or not IsTradeSkillReady() then return end
 
 	local professionLink = GetTradeSkillListLink()
+	if not professionLink then return end
 	local unitGUID, _, professionSkill = professionLink:match('trade:([^:]+):([^:]+):([^:\124]+)')
 	                   professionSkill = tonumber(professionSkill)
 	WipeProfessionData(professionSkill)

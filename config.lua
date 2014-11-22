@@ -19,7 +19,7 @@ local function OpenConfiguration(self, args)
 	end --]]
 
 	-- variant B: directly initialize panel
-	LibStub('LibDualSpec-1.0'):EnhanceDatabase(addon.db, addonName)
+	-- LibStub('LibDualSpec-1.0'):EnhanceDatabase(addon.db, addonName)
 	LibStub('AceConfig-3.0'):RegisterOptionsTable(addonName, {
 		type = 'group',
 		args = {

@@ -252,6 +252,7 @@ local function ShowSearchTooltip(button, tooltip)
 end
 
 local function InitializeTradeSkillFrame(event, ...)
+	if not addon.db.profile.customSearch then return end
 	search:UnregisterEvent('TRADE_SKILL_SHOW')
 
 	local orig_searchBox = _G.TradeSkillFrameSearchBox

@@ -2,8 +2,11 @@
 ## Author: ckaotik
 ## Title: ckaosCraft
 ## Version: dev
-## Dependencies: Blizzard_TradeSkillUI
+# Dependencies: Blizzard_TradeSkillUI
 ## SavedVariables: ckaosCraftDB
+
+## LoadOnDemand: 1
+## LoadWith: Blizzard_TradeSkillUI
 
 #@no-lib-strip@
 # libraries

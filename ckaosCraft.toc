@@ -1,8 +1,10 @@
 ## Interface: 60000
 ## Author: ckaotik
-## Title: ckaosCraft
 ## Version: dev
 # Dependencies: Blizzard_TradeSkillUI
+
+## Title: ckaosCraft
+## Notes: Customizations for the crafting interface
 ## SavedVariables: ckaosCraftDB
 
 ## LoadOnDemand: 1

@@ -31,6 +31,22 @@ function addon.ShowTooltip(self, anchor)
 end
 function addon.HideTooltip() GameTooltip:Hide() end
 
+local compareTip
+function addon.ShowCompareTooltips(itemLink, tooltip)
+	if not IsEquippableItem(itemLink) then return end
+	if not compareTip then
+		compareTip = CreateFrame('GameTooltip', addonName..'CompareTooltip', nil, 'GameTooltipTemplate')
+		compareTip.shoppingTooltips = GameTooltip.shoppingTooltips
+	end
+	compareTip:SetOwner((tooltip or GameTooltip):GetOwner(), 'ANCHOR_NONE')
+	compareTip:SetHyperlink(itemLink)
+	compareTip:ClearAllPoints()
+	compareTip:SetAllPoints(tooltip or GameTooltip)
+	-- don't want to overlay the original tooltip
+	compareTip:SetAlpha(0)
+	GameTooltip_ShowCompareItem(compareTip)
+end
+
 function addon.GetLinkID(link)
 	if not link or type(link) ~= "string" then return end
 	local linkType, id = link:match("\124H([^:]+):([^:\124]+)")
@@ -59,22 +75,6 @@ function addon:OnInitialize()
 			autoScanRecipes = false,
 		},
 	}, true)
-
-	-- setup ldb launcher
-	--[[ self.ldb = LibStub:GetLibrary('LibDataBroker-1.1'):NewDataObject(addonName, {
-		type  = 'launcher',
-		icon  = 'Interface\\Icons\\ACHIEVEMENT_GUILDPERK_MRPOPULARITY_RANK2',
-		label = addonName,
-
-		OnClick = function(button, btn, up)
-			if btn == 'RightButton' then
-				-- open config
-				-- InterfaceOptionsFrame_OpenToCategory(addonName)
-			else
-				ToggleFrame(self.frame)
-			end
-		end,
-	}) --]]
 end
 
 local tradeSkills = {
@@ -251,47 +251,39 @@ end
 local function AddTradeSkillHoverLink(self)
 	if not addon.db.profile.listTooltips then return end
 
-	local ID = self:GetID()
-	local recipeLink = ID and GetTradeSkillRecipeLink(ID)
-	local result = GetTradeSkillItemLink(ID)
+	local index = self:GetID()
+	local recipeLink = GetTradeSkillRecipeLink(index)
+	local result = GetTradeSkillItemLink(index)
 
 	if result and recipeLink then
-		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-
-		if IsEquippableItem(result) then
-			GameTooltip:SetHyperlink(result)
-			if IsModifiedClick("COMPAREITEMS") or (GetCVarBool("alwaysCompareItems") and not GameTooltip:IsEquippedItem()) then
-				GameTooltip_ShowCompareItem(GameTooltip, true)
-			end
-		end
+		GameTooltip:SetOwner(self, 'ANCHOR_RIGHT')
 		GameTooltip:SetHyperlink(recipeLink)
 
+		if IsEquippableItem(result) then
+			if IsModifiedClick('COMPAREITEMS') or GetCVarBool('alwaysCompareItems') then
+				addon.ShowCompareTooltips(result, GameTooltip)
+			end
+			if IsAddOnLoaded('TopFit') and TopFit.TooltipAddCompareLines then
+				TopFit.TooltipAddCompareLines(GameTooltip, result)
+			end
+		end
+
 		if Atr_ShowTipWithPricing then
-			GameTooltip:AddLine(" ")
+			GameTooltip:AddLine(' ')
 			Atr_ShowTipWithPricing(GameTooltip, result, 1)
-		elseif IsAddOnLoaded("Auctional") then
+		end
+		if IsAddOnLoaded('Auctional') then
 			Auctional.ShowSimpleTooltipData(GameTooltip, result)
 		end
-		if IsAddOnLoaded("TopFit") and TopFit.TooltipAddCompareLines then
-			TopFit.TooltipAddCompareLines(GameTooltip, result)
-		end
-		GameTooltip:Show()
 
-		if not self.touched then
-			self:HookScript("OnClick", function(self)
-				if IsModifiedClick("DRESSUP") then
-					DressUpItemLink(result)
-				end
-			end)
-			self.touched = true
-		end
+		GameTooltip:Show()
 	end
 end
 
 function addon:OnEnable()
-	hooksecurefunc("TradeSkillFrame_Update", AddTradeSkillReagentCosts)
+	hooksecurefunc('TradeSkillFrame_Update', AddTradeSkillReagentCosts)
 	self:RegisterMessage('TRADE_SKILL_ROW_UPDATE', AddTradeSkillLineReagentCost)
-	hooksecurefunc("TradeSkillFrame_SetSelection", AddTradeSkillLevels)
-	hooksecurefunc("TradeSkillFrameButton_OnEnter", AddTradeSkillHoverLink)
-	hooksecurefunc("TradeSkillFrameButton_OnLeave", addon.HideTooltip)
+	hooksecurefunc('TradeSkillFrame_SetSelection', AddTradeSkillLevels)
+	hooksecurefunc('TradeSkillFrameButton_OnEnter', AddTradeSkillHoverLink)
+	hooksecurefunc('TradeSkillFrameButton_OnLeave', addon.HideTooltip)
 end

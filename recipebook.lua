@@ -64,7 +64,7 @@ local function InitializeTradeSkillFrame()
 	-- create additional rows since scroll frame area grew
 	local numRows = floor((frame:GetHeight() - 83 - 28) / _G.TRADE_SKILL_HEIGHT)
 	for index = TRADE_SKILLS_DISPLAYED+1, numRows do
-		local row = CreateFrame('Button', 'TradeSkillSkill'..index, frame, 'TradeSkillSkillButtonTemplate')
+		local row = CreateFrame('Button', 'TradeSkillSkill'..index, frame, 'TradeSkillSkillButtonTemplate', index)
 		      row:SetPoint('TOPLEFT', _G['TradeSkillSkill'..(index-1)], 'BOTTOMLEFT')
 		      row.skillup:Hide()
 		      row.SubSkillRankBar:Hide()
@@ -72,6 +72,16 @@ local function InitializeTradeSkillFrame()
 		_G['TradeSkillSkill'..index..'Highlight']:SetTexture('')
 	end
 	_G.TRADE_SKILLS_DISPLAYED = numRows
+
+	-- previewing created items
+	for index = 1, TRADE_SKILLS_DISPLAYED do
+		_G['TradeSkillSkill'..index]:HookScript('OnClick', function(self)
+			local result = GetTradeSkillItemLink(self:GetID())
+			if IsEquippableItem(result) and IsModifiedClick('DRESSUP') then
+				DressUpItemLink(result)
+			end
+		end)
+	end
 
 	-- detail/reagent panel
 	local details = _G.TradeSkillDetailScrollFrame

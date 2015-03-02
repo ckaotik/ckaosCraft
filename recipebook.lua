@@ -38,6 +38,7 @@ local function OnTradeSkillFrame_SetSelection(index)
 	-- add a section for required items
 	reqLabel:SetTextColor(reagentLabel:GetTextColor())
 	reqLabel:SetShadowColor(reagentLabel:GetShadowColor())
+	cooldown:ClearAllPoints()
 	cooldown:SetPoint('TOPLEFT', description, 'BOTTOMLEFT', 0, -10)
 	reqLabel:SetPoint('TOPLEFT', cooldown, 'BOTTOMLEFT', 0, -10)
 	reqText:SetPoint('TOPLEFT', reqLabel, 'BOTTOMLEFT', 0, 0)

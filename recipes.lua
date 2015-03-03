@@ -281,6 +281,7 @@ local commonCraftables = {
 	[76734] = { ['|131776'] = '1|1|90407|10' }, -- Serpent's Eye
 
 	-- TODO: add WoD combines, add low-level gathering combines
+	[110609] = { ['|159069'] = '1|1|110610:10' }, -- Raw Beasthide Scraps
 }
 
 local function ScanForReagents(index, ...)

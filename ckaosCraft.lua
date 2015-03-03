@@ -263,8 +263,8 @@ local function AddTradeSkillHoverLink(self)
 			if IsModifiedClick('COMPAREITEMS') or GetCVarBool('alwaysCompareItems') then
 				addon.ShowCompareTooltips(result, GameTooltip)
 			end
-			if IsAddOnLoaded('TopFit') and TopFit.TooltipAddCompareLines then
-				TopFit.TooltipAddCompareLines(GameTooltip, result)
+			if IsAddOnLoaded("TopFit") and TopFit.AddComparisonTooltipLines then
+				TopFit:AddComparisonTooltipLines(GameTooltip, result)
 			end
 		end
 

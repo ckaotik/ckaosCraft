@@ -109,6 +109,7 @@ local function Initialize()
 		      middleScrollBar:SetTexCoord(0, 0.46875, 0.03125, 0.9609375)
 		      middleScrollBar:SetPoint('TOPLEFT', topScrollBar, 'TOPLEFT', 1, 0)
 		      middleScrollBar:SetPoint('BOTTOMRIGHT', bottomScrollBar, 'TOPRIGHT', 0, 0)
+		middleScrollBar:SetShown(topScrollBar:IsShown())
 	end
 
 	-- sidebar/craft details changes

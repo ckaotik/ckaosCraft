@@ -52,7 +52,7 @@ end
 	TradeSkillFrame => 540 x 468
 	PaperDollFrame  => 540 x 424
 --]]
-local function InitializeTradeSkillFrame()
+local function Initialize()
 	local frame = _G.TradeSkillFrame
 	      frame:SetSize(540, 450)
 
@@ -72,10 +72,12 @@ local function InitializeTradeSkillFrame()
 		      row:SetNormalTexture('')
 		_G['TradeSkillSkill'..index..'Highlight']:SetTexture('')
 	end
-	_G.TRADE_SKILLS_DISPLAYED = numRows
+	if numRows ~= _G.TRADE_SKILLS_DISPLAYED then
+		_G.TRADE_SKILLS_DISPLAYED = numRows
+	end
 
 	-- previewing created items
-	for index = 1, TRADE_SKILLS_DISPLAYED do
+	for index = 1, numRows do
 		_G['TradeSkillSkill'..index]:HookScript('OnClick', function(self)
 			local result = GetTradeSkillItemLink(self:GetID())
 			if IsEquippableItem(result) and IsModifiedClick('DRESSUP') then
@@ -102,7 +104,7 @@ local function InitializeTradeSkillFrame()
 	-- stretching the scroll bars
 	for _, scrollFrame in pairs({list, details}) do
 		local topScrollBar, bottomScrollBar = scrollFrame:GetRegions()
-		local middleScrollBar = scrollFrame:CreateTexture(scrollFrame:GetName()..'Middle', 'BACKGROUND')
+		local middleScrollBar = scrollFrame:CreateTexture(nil, 'BACKGROUND') -- unnamed to avoid taint
 		      middleScrollBar:SetTexture('Interface\\PaperDollInfoFrame\\UI-Character-ScrollBar')
 		      middleScrollBar:SetTexCoord(0, 0.46875, 0.03125, 0.9609375)
 		      middleScrollBar:SetPoint('TOPLEFT', topScrollBar, 'TOPLEFT', 1, 0)
@@ -223,16 +225,6 @@ local function InitializeTradeSkillFrame()
 	end)
 end
 
-function recipebook:OnEnable()
-	self:RegisterEvent('TRADE_SKILL_SHOW')
-end
-
-function recipebook:OnDisable()
-	self:UnregisterEvent('TRADE_SKILL_SHOW')
-end
-
-function recipebook:TRADE_SKILL_SHOW(event, ...)
-	InitializeTradeSkillFrame()
-	hooksecurefunc('TradeSkillFrame_SetSelection', OnTradeSkillFrame_SetSelection)
-	self:UnregisterEvent('TRADE_SKILL_SHOW')
-end
+-- we're loading together with Blizzard_TradeSkillUI, initialize immediately
+Initialize()
+hooksecurefunc('TradeSkillFrame_SetSelection', OnTradeSkillFrame_SetSelection)

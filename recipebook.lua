@@ -104,12 +104,11 @@ local function Initialize()
 	-- stretching the scroll bars
 	for _, scrollFrame in pairs({list, details}) do
 		local topScrollBar, bottomScrollBar = scrollFrame:GetRegions()
-		local middleScrollBar = scrollFrame:CreateTexture(nil, 'BACKGROUND') -- unnamed to avoid taint
+		local middleScrollBar = scrollFrame.ScrollBar:CreateTexture(nil, 'BACKGROUND')
 		      middleScrollBar:SetTexture('Interface\\PaperDollInfoFrame\\UI-Character-ScrollBar')
 		      middleScrollBar:SetTexCoord(0, 0.46875, 0.03125, 0.9609375)
 		      middleScrollBar:SetPoint('TOPLEFT', topScrollBar, 'TOPLEFT', 1, 0)
 		      middleScrollBar:SetPoint('BOTTOMRIGHT', bottomScrollBar, 'TOPRIGHT', 0, 0)
-		middleScrollBar:SetShown(topScrollBar:IsShown())
 	end
 
 	-- sidebar/craft details changes

@@ -97,7 +97,12 @@ local tradeSkills = {
 	[ 2550] = 'Cooking',
 	[ 3273] = 'First Aid',
 	[ 7620] = 'Fishing',
+	-- class professions
+	[53428] = 'Runeforging',
+	[ 1804] = 'Pick Lock',
 }
+addon.tradeSkills = tradeSkills
+
 local skillColors = {
 	[1] = "|cffFF8040",		-- orange
 	[2] = "|cffFFFF00",		-- yellow

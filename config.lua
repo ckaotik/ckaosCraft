@@ -23,7 +23,7 @@ local function OpenConfiguration(self, args)
 	LibStub('AceConfig-3.0'):RegisterOptionsTable(addonName, {
 		type = 'group',
 		args = {
-			general  = LibStub('LibOptionsGenerate-1.0'):GetOptionsTable(addon.db),
+			general  = LibStub('LibOptionsGenerate-1.0'):GetOptionsTable(addon.db, nil, nil, true),
 			profiles = LibStub('AceDBOptions-3.0'):GetOptionsTable(addon.db)
 		},
 	})

@@ -3,8 +3,8 @@ local addonName, addon, _ = ...
 local plugin = addon:NewModule('Tabs', 'AceEvent-3.0')
 
 -- GLOBALS: _G, LibStub
--- interesting globals: BOOKTYPE_PROFESSION, PROFESSION_RANKS, CURRENT_TRADESKILL
--- TODO: Don't close when clicking already displayed tradeskill
+-- interesting globals: BOOKTYPE_PROFESSION, PROFESSION_RANKS, CURRENT_TRADESKILL, GetSpellTabInfo(profIndex)
+-- TODO: Don't close when clicking already displayed tradeskill: IsCurrentSpell("Schmiedekunst")
 -- TODO: allow shift-linking
 
 local tabs = {}
@@ -58,6 +58,7 @@ end
 local defaults = {
 	profile = {
 		showSpecialization = true,
+		showArchaeology = true,
 	},
 }
 function plugin:OnEnable()
@@ -83,7 +84,8 @@ function plugin:UpdateTabs()
 	end
 end
 
-local ARCHAEOLOGY, LOCKPICKING, RUNEFORGING = 78670, 1804, 53428
+-- arch is the skill line, the rest are spell ids
+local ARCHAEOLOGY, SURVEY, SMELTING, LOCKPICKING, RUNEFORGING = 794, 80451, 2656, 1804, 53428
 function plugin:Update()
 	for index, tab in pairs(tabs) do
 		UpdateTab(index, nil)
@@ -98,12 +100,12 @@ function plugin:Update()
 			local spellName, _, spellIcon, _, _, _, spellID = GetSpellInfo(spellIndex, BOOKTYPE_SPELL)
 
 			-- handle specializations if available
-			local displaySkill = specializationOffset == 0 -- profession w/o specialization
-				or (self.db.showSpecialization == (specializationOffset == offset)) -- select correct spell version
-			if displaySkill and spellID ~= ARCHAEOLOGY
+			local displaySkill = specializationOffset == 0
+				or (self.db.profile.showSpecialization == (specializationOffset == offset))
+			if displaySkill and (self.db.profile.showArchaeology or skillLine ~= ARCHAEOLOGY or spellID == SURVEY)
 				and not IsPassiveSpell(spellIndex, _G.BOOKTYPE_PROFESSION) then
 				local spellLink, tradeLink = GetSpellLink(spellIndex, BOOKTYPE_SPELL)
-				local isPrimary = tradeLink ~= nil -- alternative: index <= 2
+				local isPrimary = tradeLink ~= nil or spellID == SMELTING
 
 				local tab = UpdateTab(isPrimary and tabIndex or secTabIndex, spellID)
 				if isPrimary then

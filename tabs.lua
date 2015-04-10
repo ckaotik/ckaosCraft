@@ -84,8 +84,8 @@ function plugin:UpdateTabs()
 	end
 end
 
--- arch is the skill line, the rest are spell ids
-local ARCHAEOLOGY, SURVEY, SMELTING, LOCKPICKING, RUNEFORGING = 794, 80451, 2656, 1804, 53428
+local ARCHAEOLOGY = 794
+local SURVEY, SMELTING, LOCKPICKING, RUNEFORGING = 80451, 2656, 1804, 53428
 function plugin:Update()
 	for index, tab in pairs(tabs) do
 		UpdateTab(index, nil)
@@ -99,21 +99,26 @@ function plugin:Update()
 			local spellIndex = spellOffset + offset
 			local spellName, _, spellIcon, _, _, _, spellID = GetSpellInfo(spellIndex, BOOKTYPE_SPELL)
 
-			-- handle specializations if available
-			local displaySkill = specializationOffset == 0
-				or (self.db.profile.showSpecialization == (specializationOffset == offset))
-			if displaySkill and (self.db.profile.showArchaeology or skillLine ~= ARCHAEOLOGY or spellID == SURVEY)
-				and not IsPassiveSpell(spellIndex, _G.BOOKTYPE_PROFESSION) then
+			local displaySkill = not IsPassiveSpell(spellIndex, _G.BOOKTYPE_PROFESSION)
+			-- display specialization or base skill, as configured
+			displaySkill = displaySkill and (specializationOffset == 0
+				or (self.db.profile.showSpecialization == (specializationOffset == offset)))
+			-- display archaeology frame toggle, as configured
+			displaySkill = displaySkill and (self.db.profile.showArchaeology or skillLine ~= ARCHAEOLOGY or spellID == SURVEY)
+			if displaySkill then
 				local spellLink, tradeLink = GetSpellLink(spellIndex, BOOKTYPE_SPELL)
-				local isPrimary = tradeLink ~= nil or spellID == SMELTING
+				local hasRecipes = tradeLink ~= nil or spellID == SMELTING
+				local isPrimary  = index <= 2
 
-				local tab = UpdateTab(isPrimary and tabIndex or secTabIndex, spellID)
-				if isPrimary then
-					tabIndex = tabIndex + 1
-				else
-					secTabIndex = secTabIndex - 1
+				if not isPrimary or hasRecipes then
+					local tab = UpdateTab(hasRecipes and tabIndex or secTabIndex, spellID)
+					if hasRecipes then
+						tabIndex = tabIndex + 1
+					else
+						secTabIndex = secTabIndex - 1
+					end
+					tab.name = name
 				end
-				tab.name = name
 			end
 		end
 	end

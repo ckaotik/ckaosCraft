@@ -12,6 +12,8 @@ local function TabOnClick(self, btn, up)
 	-- do not highlight camp fire etc.
 	if self:GetID() < 0 then
 		plugin:UpdateTabs()
+	else
+		self:SetChecked(false)
 	end
 end
 

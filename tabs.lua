@@ -8,21 +8,12 @@ local plugin = addon:NewModule('Tabs', 'AceEvent-3.0')
 -- TODO: allow shift-linking
 
 local tabs = {}
-local function TabOnClick(self, btn, up)
-	-- do not highlight camp fire etc.
-	if self:GetID() < 0 then
-		plugin:UpdateTabs()
-	else
-		self:SetChecked(false)
-	end
-end
-
 local function GetTab(index)
 	if not tabs[index] then
 		local tab = CreateFrame('CheckButton', nil, TradeSkillFrame, 'SpellBookSkillLineTabTemplate SecureActionButtonTemplate', index)
 		tab:SetScript('OnEnter', addon.ShowTooltip)
 		tab:SetScript('OnLeave', addon.HideTooltip)
-		tab:SetScript('PostClick', TabOnClick)
+		tab:SetScript('PostClick', plugin.UpdateTabs)
 		tab:SetAttribute('type', 'spell')
 		tabs[index] = tab
 

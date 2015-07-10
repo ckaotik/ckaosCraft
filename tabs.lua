@@ -10,7 +10,7 @@ local plugin = addon:NewModule('Tabs', 'AceEvent-3.0')
 local tabs = {}
 local function GetTab(index)
 	if not tabs[index] then
-		local tab = CreateFrame('CheckButton', nil, TradeSkillFrame, 'SpellBookSkillLineTabTemplate SecureActionButtonTemplate', index)
+		local tab = CreateFrame('CheckButton', addonName..'ProfessionTab'..index, TradeSkillFrame, 'SpellBookSkillLineTabTemplate SecureActionButtonTemplate', index)
 		tab:SetScript('OnEnter', addon.ShowTooltip)
 		tab:SetScript('OnLeave', addon.HideTooltip)
 		tab:SetScript('PostClick', plugin.UpdateTabs)

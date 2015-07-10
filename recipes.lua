@@ -379,7 +379,7 @@ function recipes:OnEnable()
 		ToggleSpellBook(_G.BOOKTYPE_PROFESSION)
 		ToggleSpellBook(_G.BOOKTYPE_PROFESSION)
 
-		local fullscreenTrigger = CreateFrame('Button', nil, nil, 'SecureActionButtonTemplate')
+		local fullscreenTrigger = CreateFrame('Button', addonName..'ProfessionScanTrigger', nil, 'SecureActionButtonTemplate')
 		fullscreenTrigger:RegisterForClicks('AnyUp')
 		fullscreenTrigger:SetAllPoints()
 		fullscreenTrigger:SetAttribute('type', 'scanTradeSkills')

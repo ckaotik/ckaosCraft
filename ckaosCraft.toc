@@ -27,4 +27,5 @@ recipeBook.lua
 recipes.lua
 search.lua
 tabs.lua
+tracker.lua
 config.lua

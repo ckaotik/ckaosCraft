@@ -97,7 +97,7 @@ local function InitTracker(self)
 	self.BlocksFrame.ProfessionHeader = CreateFrame('Frame', nil, self.BlocksFrame, 'ObjectiveTrackerHeaderTemplate')
 	TRACKER:SetHeader(self.BlocksFrame.ProfessionHeader, _G.TRADE_SKILLS, 0)
 
-	self:RegisterEvent('SKILL_LINES_CHANGED', function()
+	plugin:RegisterEvent('SKILL_LINES_CHANGED', function()
 		ObjectiveTracker_Update(OBJECTIVE_TRACKER_UPDATE_MODULE_PROFESSION)
 	end)
 	ObjectiveTracker_Update(OBJECTIVE_TRACKER_UPDATE_MODULE_PROFESSION)
@@ -126,8 +126,6 @@ function plugin:OnEnable()
 	if ObjectiveTrackerFrame.initialized then
 		InitTracker(ObjectiveTrackerFrame)
 	else
-		hooksecurefunc('ObjectiveTracker_Initialize', function(frame)
-			InitTracker(frame)
-		end)
+		hooksecurefunc('ObjectiveTracker_Initialize', InitTracker)
 	end
 end

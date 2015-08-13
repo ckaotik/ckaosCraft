@@ -2,7 +2,7 @@ local addonName, addon, _ = ...
 local plugin = addon:NewModule('Tracker', 'AceEvent-3.0')
 
 local defaults = {
-	profile = {
+	char = {
 		trackProfession = {
 			[1] = true, -- primary (first)
 			[2] = true, -- primary (second)
@@ -49,8 +49,8 @@ function TRACKER:Update()
 	for index, profession in ipairs(professions) do
 		local name, icon, rank, maxRank, numSpells, spelloffset, skillLine, rankModifier, specializationIndex, specializationOffset = GetProfessionInfo(profession)
 		local isMaxSkill = rank >= expansionMaxRank and rank == maxRank
-		if profession > 0 and plugin.db.profile.trackProfession[index]
-			and (not isMaxSkill or not plugin.db.profile.hideMaxed) then
+		if profession > 0 and plugin.db.char.trackProfession[index]
+			and (not isMaxSkill or not plugin.db.char.hideMaxed) then
 			local block = self:GetBlock(profession)
 			self:SetBlockHeader(block, ('|T%s:0|t %s'):format(icon, name))
 
@@ -103,25 +103,9 @@ local function InitTracker(self)
 	ObjectiveTracker_Update(OBJECTIVE_TRACKER_UPDATE_MODULE_PROFESSION)
 end
 
+plugin.Update = TRACKER.Update
 function plugin:OnEnable()
 	self.db = addon.db:RegisterNamespace('Tracker', defaults)
-
-	--[[
-	local professionButtons = SpellBookProfessionFrame:GetChildren()
-	local professionToggle = CreateFrame('Button', addonName .. 'ProfessionToggle', nil, 'SecureActionButtonTemplate')
-	professionToggle:RegisterForClicks('AnyUp')
-	professionToggle:SetAttribute('type', 'OpenProfession')
-	professionToggle.OpenProfession = function(self, unit, button, actionType)
-		print(self, unit, button, actionType)
-		for index, profession in pairs(professionButtons) do
-			-- herbalism / skinning have no recipes
-			if profession.skillLine and profession.skillLine ~= 182 and profession.skillLine ~= 393 then
-				SpellButton_OnClick(profession.button1, 'LeftButton')
-				-- CloseTradeSkill()
-			end
-		end
-	end
-	--]]
 
 	if ObjectiveTrackerFrame.initialized then
 		InitTracker(ObjectiveTrackerFrame)

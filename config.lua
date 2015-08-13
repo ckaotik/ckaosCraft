@@ -38,16 +38,19 @@ local function OpenConfiguration(self, args)
 			hideMaxedName = 'Hide maxed',
 			hideMaxedDesc = 'Hide professions that are already maxed.',
 			trackProfessionName = 'Track professions',
-			trackProfessionDesc = GetProfessionTooltip,
 			trackProfessionDesc = 'Check to add to the objective tracker.',
+			trackProfessionValues = GetProfessionLabel,
 		},
 	}
+
+	-- TODO: make callbacks work
+	local callback = nil -- callback function when settings have changed
 
 	-- LibStub('LibDualSpec-1.0'):EnhanceDatabase(addon.db, addonName)
 	LibStub('AceConfig-3.0'):RegisterOptionsTable(addonName, {
 		type = 'group',
 		args = {
-			general  = LibStub('LibOptionsGenerate-1.0'):GetOptionsTable(addon.db, types, L, true),
+			general  = LibStub('LibOptionsGenerate-1.0'):GetOptionsTable(addon.db, types, L, true, callback),
 			profiles = LibStub('AceDBOptions-3.0'):GetOptionsTable(addon.db)
 		},
 	})

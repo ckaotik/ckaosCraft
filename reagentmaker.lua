@@ -1,0 +1,3 @@
+-- allows to easily craft reagents for current recipe
+local addonName, addon, _ = ...
+local recipebook = addon:NewModule('ReagentMaker', 'AceEvent-3.0')

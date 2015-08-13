@@ -3,9 +3,25 @@ local addonName, addon, _ = ...
 local plugin = addon:NewModule('Tabs', 'AceEvent-3.0')
 
 -- GLOBALS: _G, LibStub
--- interesting globals: BOOKTYPE_PROFESSION, PROFESSION_RANKS, CURRENT_TRADESKILL, GetSpellTabInfo(profIndex)
--- TODO: Don't close when clicking already displayed tradeskill: IsCurrentSpell("Schmiedekunst")
--- TODO: allow shift-linking
+-- interesting globals: PROFESSION_RANKS, CURRENT_TRADESKILL, GetSpellTabInfo(profIndex)
+
+local function TabPreClick(self, btn)
+	if IsModifiedClick('CHATLINK') then
+		-- print chat link, don't trigger spell
+		self:SetAttribute('type', nil)
+		local spellLink, tradeSkillLink = GetSpellLink(self.spellID)
+		ChatEdit_InsertLink(tradeSkillLink or spellLink)
+	elseif self:GetChecked() then
+		-- don't close profession when clicking active tab
+		self:SetAttribute('type', nil)
+	end
+end
+
+local function TabPostClick(self, btn)
+	-- reactivate button
+	self:SetAttribute('type', 'spell')
+	plugin:UpdateTabs()
+end
 
 local tabs = {}
 local function GetTab(index)
@@ -13,7 +29,8 @@ local function GetTab(index)
 		local tab = CreateFrame('CheckButton', addonName..'ProfessionTab'..index, TradeSkillFrame, 'SpellBookSkillLineTabTemplate SecureActionButtonTemplate', index)
 		tab:SetScript('OnEnter', addon.ShowTooltip)
 		tab:SetScript('OnLeave', addon.HideTooltip)
-		tab:SetScript('PostClick', plugin.UpdateTabs)
+		tab:SetScript('PreClick', TabPreClick)
+		tab:SetScript('PostClick', TabPostClick)
 		tab:SetAttribute('type', 'spell')
 		tabs[index] = tab
 

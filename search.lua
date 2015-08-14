@@ -132,10 +132,10 @@ end
 local headerParents = {}
 local function UpdateTradeSkillList()
 	-- TODO: when selection does not fulfill search, select first child
-	if not addon.db.profile.customSearch then return end
+	if not addon.db.profile.customSearch or not _G.TradeSkillFrame.searchBox then return end
 
-	local query = _G.TradeSkillFrame.search
-	if not query or query == '' or query == _G.SEARCH or not _G.TradeSkillFrameSearchBox:IsEnabled() then return end
+	local query = _G.TradeSkillFrame.searchBox.searchString
+	if not query or not _G.TradeSkillFrameSearchBox:IsEnabled() then return end
 
 	local offset     = FauxScrollFrame_GetOffset(_G.TradeSkillListScrollFrame)
 	local isGuild    = IsTradeSkillGuild()
@@ -220,14 +220,6 @@ local function UpdateTradeSkillList()
 	end
 end
 
--- TODO: add slight delay. see Twinkle/Search
-local function UpdateTradeSkillSearch(self, isUserInput)
-	InputBoxInstructions_OnTextChanged(self)
-	local text = self:GetText()
-	self:GetParent().search = text ~= '' and text or nil
-	TradeSkillFrame_Update()
-end
-
 local function ShowSearchTooltip(button, tooltip)
 	local color = _G.NORMAL_FONT_COLOR_CODE
 	local r, g, b = _G.NORMAL_FONT_COLOR.r, _G.NORMAL_FONT_COLOR.g, _G.NORMAL_FONT_COLOR.b
@@ -257,17 +249,44 @@ local function InitializeTradeSkillFrame(event, ...)
 
 	local orig_searchBox = _G.TradeSkillFrameSearchBox
 	      orig_searchBox:Hide()
-	local searchBox = CreateFrame('EditBox', '$parentAdvancesSearchBox', _G.TradeSkillFrame, 'SearchBoxTemplate')
+	local searchBox = CreateFrame('EditBox', '$parentAdvancedSearchBox', _G.TradeSkillFrame, 'SearchBoxTemplate')
 	      searchBox:SetAllPoints(orig_searchBox)
 	      searchBox.tiptext = ShowSearchTooltip
 	_G.TradeSkillFrame.searchBox = searchBox
 
+	local searchDelay, lastUpdate = 0.25, 0
+	local function SearchDelayed(self)
+		local now = GetTime()
+		if now >= lastUpdate + searchDelay then
+			lastUpdate = now
+			self:SetScript('OnUpdate', nil)
+			search:Update()
+		end
+	end
+
+	searchBox.clearButton:HookScript('OnClick', searchBox.clearButton.Hide)
 	searchBox:SetScript('OnEnter', addon.ShowTooltip)
 	searchBox:SetScript('OnLeave', addon.HideTooltip)
-	searchBox:SetScript('OnTextChanged', UpdateTradeSkillSearch)
-	searchBox:SetScript('OnEnterPressed', EditBox_ClearFocus)
 	searchBox:SetScript('OnEscapePressed', function(self) self.clearButton:Click() end)
-	searchBox.clearFunc = function(self) TradeSkillFrame_Update() end
+	searchBox:SetScript('OnEnterPressed', EditBox_ClearFocus)
+	searchBox:SetScript('OnTextChanged', function(self, isUserInput)
+		InputBoxInstructions_OnTextChanged(self)
+		local query = self:GetText():trim()
+		      query = query ~= '' and query or nil
+		if query == self.searchString then return end
+		self.searchString = query
+
+		if not isUserInput then
+			search:Update()
+		else
+			lastUpdate = GetTime()
+			self:SetScript('OnUpdate', SearchDelayed)
+		end
+	end)
+end
+
+function search:Update()
+	TradeSkillFrame_Update()
 end
 
 function search:OnEnable()

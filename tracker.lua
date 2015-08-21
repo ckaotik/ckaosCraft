@@ -48,8 +48,9 @@ function TRACKER:Update()
 	TRACKER:BeginLayout()
 	for index, profession in ipairs(professions) do
 		local name, icon, rank, maxRank, numSpells, spelloffset, skillLine, rankModifier, specializationIndex, specializationOffset = GetProfessionInfo(profession)
+		rank, maxRank = rank or 0, maxRank or 0
 		local isMaxSkill = rank >= expansionMaxRank and rank == maxRank
-		if profession > 0 and plugin.db.char.trackProfession[index]
+		if profession > 0 and rank > 0 and plugin.db.char.trackProfession[index]
 			and (not isMaxSkill or not plugin.db.char.hideMaxed) then
 			local block = self:GetBlock(profession)
 			self:SetBlockHeader(block, ('|T%s:0|t %s'):format(icon, name))

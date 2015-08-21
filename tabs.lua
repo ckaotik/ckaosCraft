@@ -11,7 +11,7 @@ local function TabPreClick(self, btn)
 		self:SetAttribute('type', nil)
 		local spellLink, tradeSkillLink = GetSpellLink(self.spellID)
 		ChatEdit_InsertLink(tradeSkillLink or spellLink)
-	elseif self:GetChecked() then
+	elseif not self:GetChecked() then
 		-- don't close profession when clicking active tab
 		self:SetAttribute('type', nil)
 	end

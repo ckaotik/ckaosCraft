@@ -18,9 +18,8 @@ local defaults = {
 local ARCHAEOLOGY = 794
 local MINING = 186
 
-local OBJECTIVE_TRACKER_UPDATE_MODULE_PROFESSION = 0x2000
 local TRACKER = ObjectiveTracker_GetModuleInfoTable()
-TRACKER.updateReasonModule = OBJECTIVE_TRACKER_UPDATE_MODULE_PROFESSION
+TRACKER.updateReasonEvents = OBJECTIVE_TRACKER_UPDATE_ALL
 TRACKER.usedBlocks = {}
 plugin.tracker = TRACKER
 
@@ -91,6 +90,16 @@ function TRACKER:Update()
 		end
 	end
 	TRACKER:EndLayout()
+
+	-- TODO: FIXME: when in bonus objective, boxes get moved...
+	if BONUS_OBJECTIVE_TRACKER_MODULE.firstBlock then
+		if ACHIEVEMENT_TRACKER_MODULE.firstBlock then
+			-- move below achievements
+		else
+			-- move below bonus objective
+			-- AnchorBlock(ACHIEVEMENT_TRACKER_MODULE.Header, BONUS_OBJECTIVE_TRACKER_MODULE.lastBlock)
+		end
+	end
 end
 
 local function InitTracker(self)
@@ -99,9 +108,9 @@ local function InitTracker(self)
 	TRACKER:SetHeader(self.BlocksFrame.ProfessionHeader, _G.TRADE_SKILLS, 0)
 
 	plugin:RegisterEvent('SKILL_LINES_CHANGED', function()
-		ObjectiveTracker_Update(OBJECTIVE_TRACKER_UPDATE_MODULE_PROFESSION)
+		ObjectiveTracker_Update()
 	end)
-	ObjectiveTracker_Update(OBJECTIVE_TRACKER_UPDATE_MODULE_PROFESSION)
+	ObjectiveTracker_Update()
 end
 
 plugin.Update = TRACKER.Update

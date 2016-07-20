@@ -94,112 +94,44 @@ end
 -- --------------------------------------------------------
 --  Recipe Scanning
 -- --------------------------------------------------------
-local tradeSkillFilters = {}
-local function SaveFilters()
-	local displayedTradeskill = _G.CURRENT_TRADESKILL
-	local filters = tradeSkillFilters[displayedTradeskill]
-	if not tradeSkillFilters[displayedTradeskill] then
-		tradeSkillFilters[displayedTradeskill] = {}
-		filters = tradeSkillFilters[displayedTradeskill]
-	else
-		wipe(filters)
-	end
-
-	filters.selected 	 = GetTradeSkillSelectionIndex()
-	filters.name 		 = GetTradeSkillItemNameFilter()
-	filters.levelMin,
-	filters.levelMax 	 = GetTradeSkillItemLevelFilter()
-	filters.hasMaterials = _G.TradeSkillFrame.filterTbl.hasMaterials
-	filters.hasSkillUp 	 = _G.TradeSkillFrame.filterTbl.hasSkillUp
-
-	if not GetTradeSkillInvSlotFilter(0) then
-		if not filters.slots then filters.slots = {} end
-		for i = 1, select('#', GetTradeSkillInvSlots()) do
-			filters.slots[i] = GetTradeSkillInvSlotFilter(i)
-		end
-	end
-
-	if not GetTradeSkillCategoryFilter(0) then
-		if not filters.subClasses then filters.subClasses = {} end
-		for i = 1, select('#', GetTradeSkillSubClasses()) do
-			filters.subClasses[i] = GetTradeSkillCategoryFilter(i)
-		end
-	end
-end
-local function RestoreFilters()
-	local displayedTradeskill = _G.CURRENT_TRADESKILL
-	local filters = tradeSkillFilters[displayedTradeskill]
-	if not displayedTradeskill or not filters then return end
-
-	SetTradeSkillItemNameFilter(filters.name)
-	SetTradeSkillItemLevelFilter(filters.levelMin or 0, filters.levelMax or 0)
-	TradeSkillOnlyShowMakeable(filters.hasMaterials)
-	TradeSkillOnlyShowSkillUps(filters.hasSkillUp)
-
-	if filters.slots and #filters.slots > 0 then
-		SetTradeSkillInvSlotFilter(0, 1, 1)
-		for index, enabled in pairs(filters.slots) do
-			SetTradeSkillInvSlotFilter(index, enabled)
-		end
-	end
-	if filters.subClasses and #filters.subClasses > 0 then
-		SetTradeSkillCategoryFilter(0, 1, 1)
-		for index, enabled in pairs(filters.subClasses) do
-			SetTradeSkillCategoryFilter(index, enabled)
-		end
-	end
-
-	TradeSkillUpdateFilterBar()
-	SelectTradeSkill(filters.selected)
-	-- TradeSkillFrame_Update()
-end
-local function RemoveFilters()
-	ExpandTradeSkillSubClass(0) -- TODO: isn't currently saved/restored
-	SetTradeSkillItemLevelFilter(0, 0)
-    SetTradeSkillItemNameFilter(nil)
-    TradeSkillSetFilter(-1, -1)
-    -- TradeSkillFrame_Update()
-end
-
 local craftInfo = {}
 local function ScanTradeSkill()
 	-- TODO: IsTradeSkillReady() seems to be false on first init
 	-- TODO: maybe even allow reagent crafting for linked skills, assuming we have the skill, too
-	if IsTradeSkillLinked() or not IsTradeSkillReady() then return end
+	if C_TradeSkillUI.IsTradeSkillLinked() or not C_TradeSkillUI.IsTradeSkillReady() then return end
 
-	local professionLink = GetTradeSkillListLink()
+	local professionLink = C_TradeSkillUI.GetTradeSkillListLink()
 	if not professionLink then return end
 	local unitGUID, _, professionSkill = professionLink:match('trade:([^:]+):([^:]+):([^:\124]+)')
 	                   professionSkill = tonumber(professionSkill)
 	WipeProfessionData(professionSkill)
 
-	SaveFilters()
-	RemoveFilters()
-	for index = 1, GetNumTradeSkills() do
-		local skillName, skillType = GetTradeSkillInfo(index)
-		if skillName and not skillType:find('header') then
-			local crafted   = GetTradeSkillItemLink(index)
-			local craftedID = crafted:match('enchant:(%d+)')
-				  craftedID = craftedID and -1*craftedID or 1*crafted:match('item:(%d+)')
-			local craftSpellID = GetTradeSkillRecipeLink(index)
-				  craftSpellID = 1*craftSpellID:match('enchant:(%d+)')
+	local recipes = C_TradeSkillUI.GetAllRecipeIDs();
+	for _, recipe in ipairs(recipes) do
+		-- local recipeInfo = C_TradeSkillUI.GetRecipeInfo(recipe)
+		local crafted   = C_TradeSkillUI.GetRecipeItemLink(recipe)
+		local craftedID = crafted:match('enchant:(%d+)')
+			  craftedID = craftedID and -1*craftedID or 1*crafted:match('item:(%d+)')
+		local craftSpellID = C_TradeSkillUI.GetRecipeLink(recipe)
+			  craftSpellID = 1*craftSpellID:match('enchant:(%d+)')
 
-			wipe(craftInfo)
-			for i = 1, GetTradeSkillNumReagents(index) do
-				local _, _, amount = GetTradeSkillReagentInfo(index, i)
-				-- FIXME: when item data is not available, our saved data gets corrupted!
-				local reagent = GetTradeSkillReagentItemLink(index, i)
-					  reagent = reagent and 1*reagent:match('item:(%d+)')
-				if reagent and amount > 0 then
-					tinsert(craftInfo, reagent)
-					tinsert(craftInfo, amount)
-				end
+		wipe(craftInfo)
+		for i = 1, C_TradeSkillUI.GetRecipeNumReagents(recipe) do
+			local _, _, required = C_TradeSkillUI.GetRecipeReagentInfo(recipe, i)
+			-- FIXME: when item data is not available, our saved data gets corrupted!
+			local reagent = C_TradeSkillUI.GetRecipeReagentItemLink(recipe, i)
+				  reagent = reagent and 1*reagent:match('item:(%d+)')
+			if reagent and required > 0 then
+				tinsert(craftInfo, reagent)
+				tinsert(craftInfo, required)
 			end
-			local minYield, maxYield = GetTradeSkillNumMade(index)
-			WriteData(craftedID, craftSpellID, professionSkill, minYield, maxYield, unpack(craftInfo))
 		end
+		local minYield, maxYield = C_TradeSkillUI.GetRecipeNumItemsProduced(recipe)
+		WriteData(craftedID, craftSpellID, professionSkill, minYield, maxYield, unpack(craftInfo))
+
+		-- Required tools:
+		-- local reqName, uncolored, reqName2, ... = C_TradeSkillUI.GetRecipeTools(recipe)
 	end
-	RestoreFilters()
 end
 
 local spellBookSkillButtons = { 'PrimaryProfession1SpellButtonBottom', 'PrimaryProfession2SpellButtonBottom', 'SecondaryProfession3SpellButtonRight', 'SecondaryProfession4SpellButtonRight' }
@@ -284,10 +216,11 @@ local commonCraftables = {
 	[110609] = { ['|159069'] = '1|1|110610:10' }, -- Raw Beasthide Scraps
 }
 
-local function ScanForReagents(index, ...)
-	for i = 1, GetTradeSkillNumReagents(index) do
-		local _, _, reagentCount, playerReagentCount = GetTradeSkillReagentInfo(index, i)
-		local link = GetTradeSkillReagentItemLink(index, i)
+local function ScanForReagents(self, index, ...)
+	if not index then return end
+	for i = 1, C_TradeSkillUI.GetRecipeNumReagents(index) do
+		local _, _, reagentCount, playerReagentCount = C_TradeSkillUI.GetRecipeReagentInfo(index, i)
+		local link = C_TradeSkillUI.GetRecipeItemLink(index, i)
 		if link then
 			local linkType, itemID = link:match('\124H([^:]+):([^:]+)')
 						    itemID = itemID and tonumber(itemID)
@@ -392,9 +325,9 @@ function recipes:OnEnable()
 		end)
 		RegisterStateDriver(fullscreenTrigger, 'visibility', '[combat] hide; show')
 	else
-		hooksecurefunc('TradeSkillFrame_Show', ScanTradeSkill)
+		TradeSkillFrame:HookScript('OnShow', ScanTradeSkill)
 	end
 
 	-- display part
-	hooksecurefunc('TradeSkillFrame_SetSelection', ScanForReagents)
+	hooksecurefunc(TradeSkillFrame, 'OnRecipeChanged', ScanForReagents)
 end

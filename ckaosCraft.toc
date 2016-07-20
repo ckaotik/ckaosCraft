@@ -24,10 +24,10 @@ libs\LibItemSearch-1.2\LibItemSearch-1.2.lua
 libs\LibOptionsGenerate-1.0.lua
 
 ckaosCraft.lua
-recipeBook.lua
+#recipeBook.lua
 recipes.lua
 reagentmaker.lua
 search.lua
 tabs.lua
-tracker.lua
+#tracker.lua
 config.lua

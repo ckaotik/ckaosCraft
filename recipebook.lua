@@ -225,6 +225,11 @@ local function Initialize()
 	end)
 end
 
+local function OnRetrievingFrameUpdate(self, elapsed)
+	if IsTradeSkillReady() then TradeSkillFrame_Update() end
+end
+
 -- we're loading together with Blizzard_TradeSkillUI, initialize immediately
 Initialize()
 hooksecurefunc('TradeSkillFrame_SetSelection', OnTradeSkillFrame_SetSelection)
+hooksecurefunc('TradeSkillRetrievingFrame_OnUpdate', OnRetrievingFrameUpdate)

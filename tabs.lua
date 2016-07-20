@@ -87,7 +87,7 @@ function plugin:OnDisable()
 end
 
 function plugin:UpdateTabs()
-	local currentSkill, rank, maxRank, skillLineModifier = GetTradeSkillLine()
+	local currentSkill, rank, maxRank, skillLineModifier = C_TradeSkillUI.GetTradeSkillLine()
 	for index, tab in pairs(tabs) do
 		local isShown = tab.name == currentSkill and tab:GetID() > 0
 		tab:SetChecked(isShown)

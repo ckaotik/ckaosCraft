@@ -291,7 +291,7 @@ end
 
 function search:OnEnable()
 	self:RegisterEvent('TRADE_SKILL_SHOW', InitializeTradeSkillFrame)
-	hooksecurefunc('TradeSkillFrame_Update', UpdateTradeSkillList)
+	-- hooksecurefunc('TradeSkillFrame_Update', UpdateTradeSkillList)
 end
 
 function search:OnDisable()

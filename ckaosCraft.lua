@@ -133,7 +133,7 @@ local function AddTradeSkillLevels(id)
 
 	local tradeskill = _G.CURRENT_TRADESKILL
 		  tradeskill = GetEnglishTradeSkillName(tradeskill)
-	local recipe = GetTradeSkillItemLink(id)
+	local recipe = C_TradeSkillUI.GetRecipeItemLink(id)
 		  recipe = tonumber(select(3, string.find(recipe or "", "-*:(%d+)[:|].*")) or "")
 	if not recipe then return end
 
@@ -141,7 +141,8 @@ local function AddTradeSkillLevels(id)
 	if LPT and LPT.sets[setName] then
 		for item, value, set in LPT:IterateSet(setName) do
 			if item == recipe or item == -1 * recipe then
-				local newText = ( GetTradeSkillInfo(id) ) .. "\n" .. GetTradeSkillColoredString(string.split("/", value))
+				local newText = ( GetTradeSkillInfo(id) ) .. "\n"
+					.. GetTradeSkillColoredString(string.split("/", value))
 				TradeSkillSkillName:SetText(newText)
 				break
 			end
@@ -286,9 +287,10 @@ local function AddTradeSkillHoverLink(self)
 end
 
 function addon:OnEnable()
-	hooksecurefunc('TradeSkillFrame_Update', AddTradeSkillReagentCosts)
+	-- https://www.townlong-yak.com/framexml/beta/Blizzard_TradeSkillUI/Blizzard_TradeSkillUI.lua#15
+	-- hooksecurefunc(TradeSkillFrame.RecipeList, 'Refresh', AddTradeSkillReagentCosts)
 	self:RegisterMessage('TRADE_SKILL_ROW_UPDATE', AddTradeSkillLineReagentCost)
-	hooksecurefunc('TradeSkillFrame_SetSelection', AddTradeSkillLevels)
-	hooksecurefunc('TradeSkillFrameButton_OnEnter', AddTradeSkillHoverLink)
-	hooksecurefunc('TradeSkillFrameButton_OnLeave', addon.HideTooltip)
+	-- hooksecurefunc(TradeSkillFrame, 'OnRecipeChanged', AddTradeSkillLevels)
+	-- hooksecurefunc('TradeSkillFrameButton_OnEnter', AddTradeSkillHoverLink)
+	-- hooksecurefunc('TradeSkillFrameButton_OnLeave', addon.HideTooltip)
 end

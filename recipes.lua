@@ -1,6 +1,6 @@
 -- scans and stores data on known recipes and how to craft them
 local addonName, addon, _ = ...
-local recipes = addon:NewModule('Recipes')
+local plugin = addon:NewModule('Recipes', 'AceEvent-3.0')
 
 -- GLOBALS: _G, LibStub
 -- GLOBALS: CreateFrame, SpellButton_OnClick, TradeSkillOnlyShowMakeable, TradeSkillOnlyShowSkillUps, TradeSkillUpdateFilterBar, SelectTradeSkill, RegisterStateDriver, UnregisterStateDriver, CloseTradeSkill
@@ -32,28 +32,38 @@ local skillLineMappings = {
 
 local function GetItemRecipes(craftedItemID)
 	-- FIXME: this needs love, lots of love
-	return recipes.db.char.craftables and recipes.db.char.craftables[craftedItemID]
+	return plugin.db.char.craftables and plugin.db.char.craftables[craftedItemID]
 end
 
-local function ReadData(craftedItemID, craftSpellID, professionID)
-	local craftables = recipes.db.char.craftables
-	if craftables and craftables[craftedItemID] then
-		for craft, data in pairs(craftables[craftedItemID]) do
-			local profID, spellID = strsplit('|', craft)
-			if (not craftSpellID or spellID == craftSpellID) and (not professionID or profID == professionID) then
-				local min, max, reagents = strsplit('|', data, 3)
-				return craftedItemID, spellID, profID, min, max, reagents
+local function WipeProfessionData(professionID)
+	for craftedItemID, crafts in pairs(plugin.db.char.craftables) do
+		for recipeID, data in pairs(crafts) do
+			if type(recipeID) ~= 'number' or C_TradeSkillUI.GetTradeSkillLineForRecipe(recipeID) == professionID then
+				plugin.db.char.craftables[craftedItemID][recipeID] = nil
 			end
 		end
 	end
 end
 
-local function WriteData(craftedItemID, craftSpellID, professionID, min, max, ...)
-	if not ... then return end
-	if not recipes.db.char.craftables[craftedItemID] then
-		recipes.db.char.craftables[craftedItemID] = {}
+local function ReadData(craftedItemID, craftSpellID, professionID)
+	local craftables = plugin.db.char.craftables
+	if not craftables or not craftables[craftedItemID] then
+		return
 	end
-	local craftID   = (professionID or '') .. '|' .. craftSpellID
+
+	for spellID, data in pairs(craftables[craftedItemID]) do
+		local profID = C_TradeSkillUI.GetTradeSkillLineForRecipe(spellID)
+		if (not craftSpellID or spellID == craftSpellID) and (not professionID or profID == professionID) then
+			return craftedItemID, spellID, profID, plugin:ParseRecipeData(data)
+		end
+	end
+end
+
+local function WriteData(craftedItemID, recipeID, min, max, ...)
+	if not ... then return end
+	if not plugin.db.char.craftables[craftedItemID] then
+		plugin.db.char.craftables[craftedItemID] = {}
+	end
 	local craftData = min .. '|' .. max
 	if type(...) == 'table' then
 		local craftInfo = ...
@@ -67,7 +77,7 @@ local function WriteData(craftedItemID, craftSpellID, professionID, min, max, ..
 			craftData = craftData .. '|' .. reagentID .. ':' .. (amount or 1)
 		end
 	end
-	recipes.db.char.craftables[craftedItemID][craftID] = craftData
+	plugin.db.char.craftables[craftedItemID][recipeID] = craftData
 end
 
 local reagentsTable = {}
@@ -80,75 +90,66 @@ local function ParseReagentsString(reagentsString)
 	return reagentsTable
 end
 
-local function WipeProfessionData(professionID)
-	for craftedItemID, crafts in pairs(recipes.db.char.craftables) do
-		for craftID, craftData in pairs(crafts) do
-			local profID, craftSpellID = strsplit('|', craftID)
-			if profID == professionID then
-				recipes.db.char.craftables[craftedItemID][craftID] = nil
-			end
-		end
-	end
-end
-
 -- --------------------------------------------------------
 --  Recipe Scanning
 -- --------------------------------------------------------
 local craftInfo = {}
-local function ScanTradeSkill()
-	-- TODO: IsTradeSkillReady() seems to be false on first init
-	-- TODO: maybe even allow reagent crafting for linked skills, assuming we have the skill, too
-	if C_TradeSkillUI.IsTradeSkillLinked() or not C_TradeSkillUI.IsTradeSkillReady() then return end
+local function ScanRecipe(recipeID, recipeInfo)
+	-- local {reqName, uncolored}* = C_TradeSkillUI.GetRecipeTools(recipeID)
+	-- local timeLeft, isDayCooldown, charges, maxCharges = C_TradeSkillUI.GetRecipeCooldown(recipeID)
 
-	local professionLink = C_TradeSkillUI.GetTradeSkillListLink()
-	if not professionLink then return end
-	local unitGUID, _, professionSkill = professionLink:match('trade:([^:]+):([^:]+):([^:\124]+)')
-	                   professionSkill = tonumber(professionSkill)
-	WipeProfessionData(professionSkill)
+	local craftedLink = C_TradeSkillUI.GetRecipeItemLink(recipeID)
+	local craftedID, linkType = addon.GetLinkID(craftedLink)
+	if linkType == 'enchant' then craftedID = -1 * craftedID end
 
-	local recipes = C_TradeSkillUI.GetAllRecipeIDs();
-	for _, recipe in ipairs(recipes) do
-		-- local recipeInfo = C_TradeSkillUI.GetRecipeInfo(recipe)
-		local crafted   = C_TradeSkillUI.GetRecipeItemLink(recipe)
-		local craftedID = crafted:match('enchant:(%d+)')
-			  craftedID = craftedID and -1*craftedID or 1*crafted:match('item:(%d+)')
-		local craftSpellID = C_TradeSkillUI.GetRecipeLink(recipe)
-			  craftSpellID = 1*craftSpellID:match('enchant:(%d+)')
-
-		wipe(craftInfo)
-		for i = 1, C_TradeSkillUI.GetRecipeNumReagents(recipe) do
-			local _, _, required = C_TradeSkillUI.GetRecipeReagentInfo(recipe, i)
-			-- FIXME: when item data is not available, our saved data gets corrupted!
-			local reagent = C_TradeSkillUI.GetRecipeReagentItemLink(recipe, i)
-				  reagent = reagent and 1*reagent:match('item:(%d+)')
-			if reagent and required > 0 then
-				tinsert(craftInfo, reagent)
-				tinsert(craftInfo, required)
-			end
+	wipe(craftInfo)
+	for i = 1, C_TradeSkillUI.GetRecipeNumReagents(recipeID) do
+		local _, _, required = C_TradeSkillUI.GetRecipeReagentInfo(recipeID, i)
+		-- FIXME: when item data is not available, our saved data gets corrupted!
+		local reagent = C_TradeSkillUI.GetRecipeReagentItemLink(recipeID, i)
+			  reagent = reagent and 1*reagent:match('item:(%d+)')
+		if reagent and required > 0 then
+			tinsert(craftInfo, reagent)
+			tinsert(craftInfo, required)
 		end
-		local minYield, maxYield = C_TradeSkillUI.GetRecipeNumItemsProduced(recipe)
-		WriteData(craftedID, craftSpellID, professionSkill, minYield, maxYield, unpack(craftInfo))
+	end
+	local minYield, maxYield = C_TradeSkillUI.GetRecipeNumItemsProduced(recipeID)
+	WriteData(craftedID, recipeID, minYield, maxYield, unpack(craftInfo))
+end
 
-		-- Required tools:
-		-- local reqName, uncolored, reqName2, ... = C_TradeSkillUI.GetRecipeTools(recipe)
+local function ScanTradeSkill()
+	if not C_TradeSkillUI.IsTradeSkillReady()
+		or C_TradeSkillUI.IsTradeSkillLinked() or C_TradeSkillUI.IsTradeSkillGuild()
+		or C_TradeSkillUI.IsNPCCrafting()
+		or C_TradeSkillUI.IsDataSourceChanging() then
+		return
+	end
+
+	local professionID = C_TradeSkillUI.GetTradeSkillLine()
+	WipeProfessionData(professionID)
+
+	local recipes = C_TradeSkillUI.GetAllRecipeIDs()
+	for _, recipeID in ipairs(recipes) do
+		local recipeInfo = C_TradeSkillUI.GetRecipeInfo(recipeID)
+		if recipeInfo and recipeInfo.learned then
+			ScanRecipe(recipeID, recipeInfo)
+		end
+		wipe(recipeInfo)
 	end
 end
 
 local spellBookSkillButtons = { 'PrimaryProfession1SpellButtonBottom', 'PrimaryProfession2SpellButtonBottom', 'SecondaryProfession3SpellButtonRight', 'SecondaryProfession4SpellButtonRight' }
 local function ScanTradeSkills()
-	if not addon.db.profile.scanRecipes then return end
-	-- Archaeology / Fishing have no recipes
-	for _, buttonName in pairs(spellBookSkillButtons) do
-		local button = _G[buttonName]
-		local profession = button:GetParent()
-		-- herbalism / skinning have no recipes
-		if profession.skillLine and profession.skillLine ~= 182 and profession.skillLine ~= 393 then
-			SpellButton_OnClick(button, 'LeftButton')
-			-- addon:Print('Scanning profession %s', profession.skillName)
-			ScanTradeSkill()
-			CloseTradeSkill()
+	local professions = { GetProfessions() }
+	local delay = 0.02
+	for index, profession in pairs(professions) do
+		if profession then
+			local name, _, _, _, _, _, skillLine = GetProfessionInfo(profession)
+			C_Timer.After(delay * (index - 1), function() C_TradeSkillUI.OpenTradeSkill(skillLine) end)
 		end
 	end
+	C_Timer.After(delay * #professions, C_TradeSkillUI.CloseTradeSkill)
+	wipe(professions)
 end
 
 -- --------------------------------------------------------
@@ -216,52 +217,8 @@ local commonCraftables = {
 	[110609] = { ['|159069'] = '1|1|110610:10' }, -- Raw Beasthide Scraps
 }
 
-local function ScanForReagents(self, index, ...)
-	if not index then return end
-	for i = 1, C_TradeSkillUI.GetRecipeNumReagents(index) do
-		local _, _, reagentCount, playerReagentCount = C_TradeSkillUI.GetRecipeReagentInfo(index, i)
-		local link = C_TradeSkillUI.GetRecipeItemLink(index, i)
-		if link then
-			local linkType, itemID = link:match('\124H([^:]+):([^:]+)')
-						    itemID = itemID and tonumber(itemID)
-			-- we know this reagent can be crafted and we need some more of it
-			if playerReagentCount < reagentCount and itemID then
-				-- TODO: scan all char's recipes
-				local _, spellID, professionID, min, max, reagents = ReadData(itemID)
-				if spellID then
-					local spellLink = GetSpellLink(spellID)
-					-- local spellLink = spellID < 0 and ('enchant:'..(-1*spellID)) or ('spell:'..spellID)
-					--       spellLink = GetFixedLink(spellLink)
-					if recipes.IsTradeSkillKnown(spellID) then
-						-- print('could create', link, spellLink)
-					else
-						-- print(link, 'is craftable via', spellLink, 'but you don\'t know/don\'t have materials')
-					end
-				end
-			end
-		end
-	end
-end
-
-local function GetMacroText(craftSpellID, numCrafts, profession)
-	-- we need the profession's name
-	profession = type(profession) == 'number' and (GetSpellInfo(skillLineMappings[profession])) or profession
-
-	local macro = ''
-	if profession and _G.CURRENT_TRADESKILL ~= profession then
-		macro = macro .. '/cast '..profession..'\n'
-	end
-	-- the actual casting
-	macro = macro .. '/run for i=1,GetNumTradeSkills() do if GetTradeSkillRecipeLink(i):match("enchant:'..craftSpellID..'\124") then DoTradeSkill(i,'..(numCrafts or 1)..') break end end'
-	-- macro = macro .. '/run for i=1,GetNumTradeSkills() do if GetTradeSkillInfo(i)==<crafted item> then DoTradeSkill(i, <num>); CloseTradeSkill(); break end end'
-	-- returning to where we were before
-	-- macro = macro .. '/cast '.._G.CURRENT_TRADESKILL..'\n'
-	-- macro = macro .. '/run TradeSkillFrame_SetSelection('..GetTradeSkillSelectionIndex()..')'
-	return macro
-end
-
 -- http://www.wowpedia.org/TradeSkillLink string.byte, bit
-function recipes.IsTradeSkillKnown(craftSpellID)
+function plugin.IsTradeSkillKnown(craftSpellID)
 	-- local professionLink = GetTradeSkillListLink()
 	-- if not professionLink then return end
 	-- local unitGUID, tradeSpellID, currentRank, maxRank, recipeList = professionLink:match("\124Htrade:([^:]+):([^:]+):([^:]+):([^:]+):([^:\124]+)")
@@ -283,7 +240,7 @@ function recipes.IsTradeSkillKnown(craftSpellID)
 	end
 
 	-- scan our saved profession info
-	for craftedItemID, sources in pairs(recipes.db.char.craftables) do
+	for craftedItemID, sources in pairs(plugin.db.char.craftables) do
 		for craft, data in pairs(sources) do
 			local profID, craftSpell = strsplit('|', craft)
 			if craftSpell == craftSpellID then
@@ -293,41 +250,40 @@ function recipes.IsTradeSkillKnown(craftSpellID)
 	end
 end
 
+function plugin:ParseRecipeData(data)
+	local min, max, reagents = strsplit('|', data, 3)
+	return min, max, reagents
+end
+
 -- --------------------------------------------------------
 --  Module Setup
 -- --------------------------------------------------------
-function recipes:OnEnable()
+function plugin:OnEnable()
 	self.db = addon.db:RegisterNamespace('Recipes', {
 		char = {
-			craftables = {},
+			craftables = {
+				-- ['*'] = { -- crafted itemID
+					-- [recipeID] = 'min|max|reagents'
+				-- },
+			},
 		},
 	})
-	--[[ setmetatable(recipes.db.char.craftables, {
+	--[[ setmetatable(plugin.db.char.craftables, {
 		-- TODO: check if recipe is known via commonCraftables
 	}) --]]
 
+	self:RegisterEvent('TRADE_SKILL_DATA_SOURCE_CHANGED', ScanTradeSkill)
+
 	-- scanning part
-	if addon.db.profile.autoScanRecipes then
-		-- load spellbook or we'll fail
-		ToggleSpellBook(_G.BOOKTYPE_PROFESSION)
-		ToggleSpellBook(_G.BOOKTYPE_PROFESSION)
-
-		local fullscreenTrigger = CreateFrame('Button', addonName..'ProfessionScanTrigger', nil, 'SecureActionButtonTemplate')
-		fullscreenTrigger:RegisterForClicks('AnyUp')
-		fullscreenTrigger:SetAllPoints()
-		fullscreenTrigger:SetAttribute('type', 'scanTradeSkills')
-		fullscreenTrigger:SetAttribute('_scanTradeSkills', function()
-			ScanTradeSkills()
-			UnregisterStateDriver(fullscreenTrigger, 'visibility')
-			fullscreenTrigger:Hide()
-
-			hooksecurefunc('TradeSkillFrame_Show', ScanTradeSkill)
-		end)
-		RegisterStateDriver(fullscreenTrigger, 'visibility', '[combat] hide; show')
-	else
-		TradeSkillFrame:HookScript('OnShow', ScanTradeSkill)
+	if addon.db.profile.scanRecipes and addon.db.profile.autoScanRecipes then
+		ScanTradeSkills()
 	end
+	-- TRADE_SKILL_DATA_SOURCE_CHANGING
+	-- TRADE_SKILL_DATA_SOURCE_CHANGED
+	-- UPDATE_TRADESKILL_RECAST
+end
 
-	-- display part
-	hooksecurefunc(TradeSkillFrame, 'OnRecipeChanged', ScanForReagents)
+
+function plugin:OnDisable()
+	self:UnregisterEvent('TRADE_SKILL_DATA_SOURCE_CHANGED')
 end

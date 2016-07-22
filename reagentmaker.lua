@@ -2,6 +2,9 @@
 local addonName, addon, _ = ...
 local plugin = addon:NewModule('ReagentMaker', 'AceEvent-3.0')
 
+-- GLOBALS: C_TradeSkillUI
+-- GLOBALS: pairs, print
+
 local function OnReagentMouseEnter(self, ...)
 	-- print('OnReagentMouseEnter', self, ...)
 end

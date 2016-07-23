@@ -255,13 +255,13 @@ local function AddTradeSkillReagentCosts()
 end
 
 local function AddTradeSkillHoverLink(self)
-	if not addon.db.profile.listTooltips then return end
+	if not addon.db.profile.listTooltips or self.isHeader then return end
 
-	local index = self:GetID()
-	local recipeLink = GetTradeSkillRecipeLink(index)
-	local result = GetTradeSkillItemLink(index)
+	local recipeID = self.tradeSkillInfo.recipeID
+	local recipeLink = C_TradeSkillUI.GetRecipeLink(recipeID)
+	local result = C_TradeSkillUI.GetRecipeItemLink(recipeID)
 
-	if result and recipeLink then
+	if recipeLink and result then
 		GameTooltip:SetOwner(self, 'ANCHOR_RIGHT')
 		GameTooltip:SetHyperlink(recipeLink)
 
@@ -291,6 +291,10 @@ function addon:OnEnable()
 	-- hooksecurefunc(TradeSkillFrame.RecipeList, 'Refresh', AddTradeSkillReagentCosts)
 	self:RegisterMessage('TRADE_SKILL_ROW_UPDATE', AddTradeSkillLineReagentCost)
 	-- hooksecurefunc(TradeSkillFrame, 'OnRecipeChanged', AddTradeSkillLevels)
-	-- hooksecurefunc('TradeSkillFrameButton_OnEnter', AddTradeSkillHoverLink)
-	-- hooksecurefunc('TradeSkillFrameButton_OnLeave', addon.HideTooltip)
+
+	local recipeButtons = TradeSkillFrame.RecipeList.buttons
+	for index, button in ipairs(recipeButtons) do
+		button:HookScript('OnEnter', AddTradeSkillHoverLink)
+		button:HookScript('OnLeave', addon.HideTooltip)
+	end
 end

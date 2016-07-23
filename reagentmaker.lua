@@ -5,14 +5,6 @@ local plugin = addon:NewModule('ReagentMaker', 'AceEvent-3.0')
 -- GLOBALS: C_TradeSkillUI
 -- GLOBALS: pairs, print
 
-local function OnReagentMouseEnter(self, ...)
-	-- print('OnReagentMouseEnter', self, ...)
-end
-
-local function OnReagentClick(self, ...)
-	-- print('OnReagentClicked', self, self:GetName(), ...)
-end
-
 local function OnReagentDoubleClick(self, ...)
 	-- print('OnReagentDoubleClick', self, ...)
 	local recipeID = self:GetParent():GetParent().selectedRecipeID
@@ -92,8 +84,6 @@ function plugin:OnEnable()
 	local reagents = TradeSkillFrame.DetailsFrame.Contents.Reagents
 	for reagentIndex = 1, #reagents do
 		local reagentButton = reagents[reagentIndex]
-		reagentButton:HookScript('OnClick', OnReagentClick)
 		reagentButton:HookScript('OnDoubleClick', OnReagentDoubleClick)
-		reagentButton:HookScript('OnEnter', OnReagentMouseEnter)
 	end
 end

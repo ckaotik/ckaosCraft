@@ -16,9 +16,9 @@ libs\LibStub\LibStub.lua
 libs\AceAddon-3.0\AceAddon-3.0.lua
 libs\AceEvent-3.0\AceEvent-3.0.lua
 libs\AceConfig-3.0\AceConfig-3.0.lua
-libs\LibButtonFacade-1.0\LibButtonFacade-1.0.lua
 libs\CustomSearch-1.0\CustomSearch-1.0.lua
 libs\LibItemSearch-1.2\LibItemSearch-1.2.lua
+libs\Unfit-1.0\Unfit-1.0.lua
 # Optional: LibPeriodicTable
 #@end-no-lib-strip@
 libs\LibOptionsGenerate-1.0.lua

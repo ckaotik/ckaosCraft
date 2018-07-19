@@ -4,6 +4,7 @@ local plugin = addon:NewModule('ReagentMaker', 'AceEvent-3.0')
 
 -- GLOBALS: C_TradeSkillUI
 -- GLOBALS: pairs, print
+local emptyTable = {}
 
 local function OnReagentDoubleClick(self, ...)
 	-- print('OnReagentDoubleClick', self, ...)
@@ -17,7 +18,7 @@ local function OnReagentDoubleClick(self, ...)
 
 	local currentTradeSkillID, currentProfessionName, rank, maxRank, skillLineModifier = C_TradeSkillUI.GetTradeSkillLine()
 
-	local recipes = plugin.recipes.db.char.craftables[itemID]
+	local recipes = plugin.recipes.db.char.craftables[itemID] or emptyTable
 	-- local recipeSpells = {}
 	for spellID, data in pairs(recipes) do
 		local profID, profName = C_TradeSkillUI.GetTradeSkillLineForRecipe(spellID)

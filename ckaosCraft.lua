@@ -286,6 +286,15 @@ local function AddTradeSkillHoverLink(self)
 	end
 end
 
+local function OnTradeSkillClick(self, button, down)
+	if self.isHeader then return end
+	local recipeID = self.tradeSkillInfo.recipeID
+	local result = C_TradeSkillUI.GetRecipeItemLink(recipeID)
+	if IsEquippableItem(result) and IsModifiedClick('DRESSUP') then
+		DressUpItemLink(result)
+	end
+end
+
 function addon:OnEnable()
 	-- https://www.townlong-yak.com/framexml/beta/Blizzard_TradeSkillUI/Blizzard_TradeSkillUI.lua#15
 	-- hooksecurefunc(TradeSkillFrame.RecipeList, 'Refresh', AddTradeSkillReagentCosts)
@@ -296,5 +305,6 @@ function addon:OnEnable()
 	for index, button in ipairs(recipeButtons) do
 		button:HookScript('OnEnter', AddTradeSkillHoverLink)
 		button:HookScript('OnLeave', addon.HideTooltip)
+		button:HookScript('OnClick', OnTradeSkillClick)
 	end
 end

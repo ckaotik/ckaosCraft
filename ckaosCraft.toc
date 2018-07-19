@@ -1,4 +1,4 @@
-## Interface: 60200
+## Interface: 80000
 ## Author: ckaotik
 ## Version: dev
 # Dependencies: Blizzard_TradeSkillUI

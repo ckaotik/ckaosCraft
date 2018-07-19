@@ -221,8 +221,8 @@ local function UpdateTradeSkillList()
 end
 
 local function ShowSearchTooltip(button, tooltip)
-	local color = _G.NORMAL_FONT_COLOR_CODE
-	local r, g, b = _G.NORMAL_FONT_COLOR.r, _G.NORMAL_FONT_COLOR.g, _G.NORMAL_FONT_COLOR.b
+	local color = _G.NORMAL_FONT_COLOR
+	local r, g, b = color:GetRGB()
 
 	tooltip:AddLine('Search hints:')
 	for key, label in pairs({
@@ -240,7 +240,7 @@ local function ShowSearchTooltip(button, tooltip)
 	tooltip:AddLine('Examples:', r, g, b)
 	tooltip:AddDoubleLine('l: > 200 & boe', 'BoE items with level > 200')
 	tooltip:AddDoubleLine('q: epic & gladiator', 'Epics named gladiator')
-	tooltip:AddLine('Combine using ' ..color..'!|r (don\'t match), '..color..'&|r (and), '..color..'|||r (or)')
+	tooltip:AddLine('Combine using |c' .. color:GenerateHexColor() .. '!|r (don\'t match), |c' .. color:GenerateHexColor() .. '&|r (and), |c' .. color:GenerateHexColor() .. '|||r (or)')
 end
 
 local function InitializeTradeSkillFrame(event, ...)

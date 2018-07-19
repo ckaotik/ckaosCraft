@@ -116,13 +116,12 @@ function plugin:Update()
 			-- display archaeology frame toggle, as configured
 			displaySkill = displaySkill and (self.db.profile.showArchaeology or skillLine ~= ARCHAEOLOGY or spellID == SURVEY)
 			if displaySkill then
-				local spellLink, tradeLink = GetSpellLink(spellIndex, BOOKTYPE_SPELL)
-				local hasRecipes = tradeLink ~= nil or spellID == SMELTING
 				local isPrimary  = index <= 2
+				local isMainSpell = offset == 1
 
-				if not isPrimary or hasRecipes then
-					local tab = UpdateTab(hasRecipes and tabIndex or secTabIndex, spellID)
-					if hasRecipes then
+				if not isPrimary or isMainSpell then
+					local tab = UpdateTab(isMainSpell and tabIndex or secTabIndex, spellID)
+					if isMainSpell then
 						tabIndex = tabIndex + 1
 					else
 						secTabIndex = secTabIndex - 1
